@@ -410,7 +410,7 @@ By actively exploiting this property and strengthen the sparsity, the system can
 In real tracking scenarios, merging and occlusion rarely occur in isolation. High-risk cases such as X-type crossings can contain both effects at the same time. As Figure~\ref{fig:x_crossing} illustrates, this may cause ID loss and ID switching. In this figure, the 3rd and 5th plots set the sensor position downward, while the other plots set the sensor position leftward. The dotted line represents the Kalman-filter prediction, and the solid line represents the ground truth.
 
 \begin{center}
-    \includegraphics[width=1\textwidth]{Figure_5.png}
+    \includegraphics[width=1\textwidth]{Figure9.png}
     \captionof{figure}{Tracking failures, including ID loss and ID switching, during a complex X-type crossing.}
     \label{fig:x_crossing}
 \end{center}
@@ -590,7 +590,7 @@ Consequently, the minimal Cartesian volume element expands to $dV = |J_{3D}| \, 
 Both the straightforward geometric footprint approximation and the rigorous multivariate calculus derivation independently converge on the exact same mathematical truth: the Cartesian spatial scaling factor is dominated by $d^2$. This geometric distortion dictates that the point cloud surface density attenuates quadratically with range ($\rho \propto d^{-2}$). This proves that distant targets will inherently suffer from spatial sparsity, imposing a fundamental physical constraint on the sensor's resolution limit. This also relates to the room-size limit and it is not apparent compared to other factors deviating the density in a room of $10 m^2$.
 \end{contentbox}
 
-\boxitemtitle{AQ1: Nonlinear Complexity of Multi-Target Occlusion}
+\boxitemtitle{AQ2: Nonlinear Complexity of Multi-Target Occlusion}
 \begin{contentbox}
 Tracking complexity scales nonlinearly with the number of targets. While 2-target occlusion is relatively straightforward, 3 or more targets introduce mutual dependencies and overlapping shadows. If all pairwise occlusion relations are enumerated directly, the number of possible states grows very quickly.
 
@@ -630,7 +630,7 @@ $3^{N-1}$
 Assume the targets are sorted as $r_1 < r_2 < \cdots < r_N$. The closest target $T_1$ is treated as visible and starts the first shadow. Then $T_2$ is checked against the shadow of $T_1$, $T_3$ is checked against the accumulated shadow of $T_1$ and $T_2$, and so on. Therefore, only $N-1$ near-to-far visibility checks are needed. Each check has 3 possible outcomes: none, partial, and full. Therefore, the physical state complexity becomes $3^{N-1}$.
 \end{contentbox}
 
-\boxitemtitle{AQ2: Can Extra LiDAR Features Help Separate Humans and Robots?}
+\boxitemtitle{AQ3: Can Extra LiDAR Features Help Separate Humans and Robots?}
 \begin{contentbox}
 While studying LiDAR sensors and the real room setup, I found that the point cloud contains more information than only the 2D position. Since this project focuses on LiDAR-only tracking, useful features should be selected from the LiDAR data itself instead of relying on extra cameras or complicated calibration.
 
@@ -649,27 +649,57 @@ When 2 targets are close or merged in the 2D plane, extra features such as heigh
 \end{itemize}
 \end{contentbox}
 
-\boxitemtitle{AQ3: Which Tracking Model Is Suitable under Occlusion?}
+\boxitemtitle{AQ4: Which Tracking Model Is Suitable under Occlusion?}
 \begin{contentbox}
-While reading papers about occlusion-aware tracking, I found that there are many possible filtering and prediction models, such as KF, EKF, IMM, particle filter, and GMM-based tracking. The best choice depends on scene complexity, target motion, and available sensor information.
+The tracking-model test uses the same 2-target LiDAR simulation family as the main report. Two rounded human targets move through crossing and turning cases, the ceiling-mounted LiDAR is placed either at the left side or bottom side of the room, and DBSCAN provides the frame-wise measurements for a Kalman-filter tracker. The purpose is to identify when a simple tracking model is still useful and when it becomes the main source of ID error.
 
-\vspace{1.0em}
-\textbf{Core Idea:}
+\begin{center}
+    \includegraphics[width=0.95\linewidth]{Figure8.png}
+    \captionof{figure}{Tracking-model stress test under multi-target crossing and turning motion.}
+    \label{fig:aq4-tracking-model-overview}
+\end{center}
 
-A simple constant-velocity KF is suitable as a first baseline. It is fast, easy to explain, and can bridge short missing-measurement periods. However, when the target turns sharply, is fully occluded for a long time, or has multiple possible future positions, a simple KF may not be enough.
+The result in Figure~\ref{fig:aq4-tracking-model-overview} shows that a standard constant-velocity KF is acceptable for short, smooth motion gaps, but it becomes fragile near intersections. At close range, clustering may merge the two point clouds, so the tracker receives either an ambiguous centroid or no reliable measurement.
 
-\vspace{0.8em}
-\textbf{Possible Tracking Models:}
-\begin{itemize}[leftmargin=*]
-    \item \textbf{KF:} Suitable for simple and smooth motion.
-    \item \textbf{EKF:} Useful when the motion or measurement model becomes nonlinear.
-    \item \textbf{IMM:} Useful when the target can switch between motion modes, such as walking straight, stopping, and turning.
-    \item \textbf{Particle Filter:} Useful for severe occlusion or multi-hypothesis tracking.
-    \item \textbf{GMM:} Useful when 1 merged cluster may actually contain 2 targets.
-\end{itemize}
+\begin{center}
+    \includegraphics[width=0.95\linewidth]{Figure10.png}
+    \captionof{figure}{Compact summary of KF prediction behavior during the high-risk crossing interval.}
+    \label{fig:aq4-kf-stress-summary}
+\end{center}
+
+Figure~\ref{fig:aq4-kf-stress-summary} further supports the same conclusion: prediction can bridge a short missing interval, but long merge or occlusion periods require stronger association logic. EKF, IMM, particle filtering, or GMM-based tracking should be compared when the motion contains turning, stopping, or multiple possible future positions.
 \end{contentbox}
 
-\boxitemtitle{AQ4: Can an Elliptical Human Model Improve Multi-Target Boundary Analysis?}
+\boxitemtitle{AQ5: What Do the Extended X-Turn Experiments Reveal?}
+\begin{contentbox}
+This experiment focuses on the X-turn-bottom case. Two targets approach the crossing region, make nonlinear turns, and pass through the closest-distance interval under an OSDome-like LiDAR at $H=2.7~\mathrm{m}$. The setup uses 50 frames at $0.1~\mathrm{s}$ per frame, target radius $0.25~\mathrm{m}$, range-dependent sparsity, gait oscillation, and DBSCAN with $\epsilon=0.22~\mathrm{m}$ and $MinPts=14$.
+
+\begin{center}
+    \includegraphics[width=0.95\linewidth]{Figure11.png}
+    \captionof{figure}{X-turn trajectory response showing KF prediction error around the nonlinear maneuver.}
+    \label{fig:aq5-xturn-kf}
+\end{center}
+
+Figure~\ref{fig:aq5-xturn-kf} shows the main limitation of a purely linear KF. The constant-velocity assumption predicts forward inertia, so the estimated state can lag or overshoot when the target turns sharply. This problem is most visible near the crossing point, where the measurements are also least reliable because the two targets are close.
+
+\begin{center}
+    \includegraphics[width=0.95\linewidth]{Figure12.png}
+    \captionof{figure}{Visibility and point-quality changes during the same close-interaction experiment.}
+    \label{fig:aq5-visibility-quality}
+\end{center}
+
+Figure~\ref{fig:aq5-visibility-quality} explains why the tracking failure is not only a filter problem. The point cloud depends strongly on the LiDAR viewpoint. A ceiling or top-side view can preserve more planar separation, while a side or bottom view can create larger geometric shadows. When one target blocks the other, the rear target receives fewer valid points and the measurement confidence drops.
+
+\begin{center}
+    \includegraphics[width=0.95\linewidth]{Figure13.png}
+    \captionof{figure}{3D tracker-assigned point clouds showing view-dependent sparsity, shadows, and merged states.}
+    \label{fig:aq5-3d-viewpoint}
+\end{center}
+
+Figure~\ref{fig:aq5-3d-viewpoint} summarizes the system-level result. LiDAR does not observe the full object surface; it mainly sees the sensor-facing side and misses regions behind the first visible target. Therefore, the tracker should treat LiDAR placement as a design variable. The tracking model, clustering parameters, and 3-Voter state logic should be tuned together for the chosen installation viewpoint.
+\end{contentbox}
+
+\boxitemtitle{AQ6: Can an Elliptical Human Model Improve Multi-Target Boundary Analysis?}
 \begin{contentbox}
 In the current simulation, each person is simplified as a circular or cylindrical object. This is useful as a baseline. However, a real human body is not perfectly circular in the horizontal plane. From a top-view LiDAR perspective, the human footprint is usually closer to an anisotropic shape with different length and width.
 
@@ -686,25 +716,25 @@ Instead of using 1 fixed radius in all directions, the human target can be repre
 \end{itemize}
 \end{contentbox}
 
-\boxitemtitle{AQ5: Can the "Bubble Effect" be Leveraged as an Active Strategy to Prevent Cluster Merging?}
+\boxitemtitle{AQ7: Can the ``Bubble Effect'' be Leveraged as an Active Strategy to Prevent Cluster Merging?}
 \begin{contentbox}
-The view-dependent "Bubble Effect" can be used as a possible strategy for delaying DBSCAN cluster merging. The key idea is simple: when the point cloud becomes sparse near the contact area between two targets, the low-density gap can help the tracker keep two IDs separated for a longer time.
+The view-dependent ``Bubble Effect'' can be used as a possible strategy for delaying DBSCAN cluster merging. The key idea is simple: when the point cloud becomes sparse near the contact area between two targets, the low-density gap can help the tracker keep two IDs separated for a longer time.
 
 \vspace{0.8em}
 \textbf{1. Natural Bubble Buffer}
 \\
-The natural bubble buffer appears when two targets approach each other but the LiDAR returns near their facing boundaries remain sparse. As shown in \textbf{Figure 6}, DBSCAN depends on local point density, controlled by the search radius $\epsilon$ and the minimum neighbor count $MinPts$. If the gap between the two point clouds is still sparse, the clusters may stay separated even when the physical targets are close. This delays the ID merge and creates a short protection zone before contact.
+The natural bubble buffer appears when two targets approach each other but the LiDAR returns near their facing boundaries remain sparse. As shown in Figure~\ref{fig:aq7-natural-bubble}, DBSCAN depends on local point density, controlled by the search radius $\epsilon$ and the minimum neighbor count $MinPts$. If the gap between the two point clouds is still sparse, the clusters may stay separated even when the physical targets are close. This delays the ID merge and creates a short protection zone before contact.
 
 \begin{center}
     \includegraphics[width=0.95\linewidth]{Figure6.png}
     \captionof{figure}{Natural bubble buffer caused by sparse points near the merging boundary.}
-    \label{fig:aq5-natural-bubble}
+    \label{fig:aq7-natural-bubble}
 \end{center}
 
 \vspace{0.8em}
 \textbf{2. Three Tested Buffer Models}
 \\
-The anisotropy test compares 1 baseline with 3 buffer-strengthening models. The baseline is the normal range-decay simulation and is used only for comparison. The 3 active models match the labels in \textbf{Figure 7}: \textbf{Power-law}, \textbf{Sigmoid}, and \textbf{Density}.
+The anisotropy test compares 1 baseline with 3 buffer-strengthening models. The baseline is the normal range-decay simulation and is used only for comparison. The 3 active models shown in Figure~\ref{fig:aq7-engineered-buffer} are \textbf{Power-law}, \textbf{Sigmoid}, and \textbf{Density}.
 
 Let $m_0$ be the minimum keep probability. Let $s \in [0,1]$ be the face score, where larger $s$ means that a point faces the LiDAR more directly.
 
@@ -713,12 +743,12 @@ Let $m_0$ be the minimum keep probability. Let $s \in [0,1]$ be the face score, 
     \begin{equation}
     P_{\text{keep}} = m_0 + (1 - m_0)s^p
     \end{equation}
-    
+
     \item \textbf{Sigmoid face-score model.} This method uses the same face score but applies a soft threshold. Points below the threshold are reduced more strongly, while points above it are mostly preserved:
     \begin{equation}
     P_{\text{keep}} = m_0 + (1 - m_0)\frac{1}{1+\exp[-k_s(s-s_0)]}
     \end{equation}
-    
+
     \item \textbf{Density self-reinforcement model.} This method uses local point density from neighbor distance. For each point, $d_{k_n}$ is the distance to its $k_n$-th nearest neighbor, and $\rho_{\text{norm}}$ is the normalized density score:
     \begin{equation}
     \rho = \frac{1}{d_{k_n}+\varepsilon}, \qquad
@@ -743,15 +773,15 @@ Let $m_0$ be the minimum keep probability. Let $s \in [0,1]$ be the face score, 
                   & $m_0$ & minimum keep probability & $0.16$ \\ \hline
 \end{tabular}
 \caption{Parameters used by the Power-law, Sigmoid, and Density buffer models.}
-\label{tab:aq5_parameters}
+\label{tab:aq7_parameters}
 \end{table}
 
-Figure 7 compares the baseline with the 3 active models. The result shows stable behavior under the tested settings and random structural noise ($\sigma = 0.015\text{ m}$). The active models increase the bubble gap, which means DBSCAN merging is delayed.
+Figure~\ref{fig:aq7-engineered-buffer} compares the baseline with the 3 active models. The result shows stable behavior under the tested settings and random structural noise ($\sigma = 0.015\text{ m}$). The active models increase the bubble gap, which means DBSCAN merging is delayed.
 
 \begin{center}
     \includegraphics[width=0.95\linewidth]{Figure7.png}
     \captionof{figure}{Bubble-buffer comparison for Baseline, Power-law, Sigmoid, and Density models.}
-    \label{fig:aq5-engineered-buffer}
+    \label{fig:aq7-engineered-buffer}
 \end{center}
 
 \vspace{0.8em}
@@ -759,7 +789,6 @@ Figure 7 compares the baseline with the 3 active models. The result shows stable
 \\
 These models suggest that a tracking pipeline can delay premature merging by adjusting point keep probabilities before clustering. The method does not require extra hardware, but real room data are still needed because clutter, reflections, and different materials may change the bubble shape. The next step is to tune the parameters on measured data and check whether ID separation improves without losing valid target points.
 \end{contentbox}
-
 % ==========================================
 \chapter{Literature Analysis}
 % ==========================================
