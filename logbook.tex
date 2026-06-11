@@ -688,41 +688,41 @@ Instead of using 1 fixed radius in all directions, the human target can be repre
 
 \boxitemtitle{AQ5: Can the "Bubble Effect" be Leveraged as an Active Strategy to Prevent Cluster Merging?}
 \begin{contentbox}
-The discovery of the view-dependent "Bubble Effect" opens a new tactical avenue for multi-target tracking. Instead of treating cluster merging as an unavoidable failure point, this section explores whether the underlying physical mechanisms causing this delay can be artificially exploited to create a robust protection buffer.
+The view-dependent "Bubble Effect" can be used as a possible strategy for delaying DBSCAN cluster merging. The key idea is simple: when the point cloud becomes sparse near the contact area between two targets, the low-density gap can help the tracker keep two IDs separated for a longer time.
 
 \vspace{0.8em}
-\textbf{1. Origin and Physics of the Natural Bubble Buffer}
+\textbf{1. Natural Bubble Buffer}
 \\
-The natural bubble effect stems from point-cloud sparsity when two targets move along a trajectory where their interaction vector is perpendicular to the LiDAR's incident rays. As demonstrated in \textbf{Figure 6}, because the ceiling-mounted sensor views targets from a specific radial viewpoint, the points on the tangential boundaries and rear surfaces become structurally sparse. Density-based clustering algorithms, such as DBSCAN, rely strictly on a local point density threshold defined by the spatial search radius ($\epsilon$) and the minimum neighborhood points ($MinPts$). When two targets approach closely, the visual erosion on their adjacent flanks creates a low-density gap where the point spacing exceeds $\epsilon$. Consequently, the algorithm experiences a "spatial hysteresis," delaying the identity-destroying merge event. This lag creates a natural buffer zone, allowing the tracking system to maintain separated identities even when the actual geometric footprints have breached the theoretical dense merge threshold ($2R + \epsilon$).
+The natural bubble buffer appears when two targets approach each other but the LiDAR returns near their facing boundaries remain sparse. As shown in \textbf{Figure 6}, DBSCAN depends on local point density, controlled by the search radius $\epsilon$ and the minimum neighbor count $MinPts$. If the gap between the two point clouds is still sparse, the clusters may stay separated even when the physical targets are close. This delays the ID merge and creates a short protection zone before contact.
 
 \begin{center}
     \includegraphics[width=0.95\linewidth]{Figure6.png}
-    \captionof{figure}{Natural bubble buffer caused by view-dependent point-cloud sparsity near the merging boundary.}
+    \captionof{figure}{Natural bubble buffer caused by sparse points near the merging boundary.}
     \label{fig:aq5-natural-bubble}
 \end{center}
 
 \vspace{0.8em}
-\textbf{2. Active Amplification via Engineered Sparsity Models}
+\textbf{2. Three Tested Buffer Models}
 \\
-To push the system's operational tracking limit as close as possible to the ideal physical contact boundary ($2R$), we can intentionally amplify this buffer. By artificially engineering the point density in high-risk proximity zones, we can prevent premature cluster merging. Within this project's scope, three mathematical models have been established to systematically enhance this phenomenon:
+The anisotropy test compares 1 baseline with 3 buffer-strengthening models. The baseline is the normal range-decay simulation and is used only for comparison. The 3 active models match the labels in \textbf{Figure 7}: \textbf{Power-law}, \textbf{Sigmoid}, and \textbf{Density}.
+
+Let $m_0$ be the minimum keep probability. Let $s \in [0,1]$ be the face score, where larger $s$ means that a point faces the LiDAR more directly.
 
 \begin{itemize}[leftmargin=*]
-    \item \textbf{Model I: Grazing-Angle Ray Attenuation (Surface Squeezing)} \\
-    This model artificially drops points whose surface normals are nearly orthogonal to the incoming laser ray vector $\mathbf{v}$, thinning the touching borders:
+    \item \textbf{Power-law face-score model.} This method uses the face score and raises it to a power. Boundary points with low face score are kept with lower probability:
     \begin{equation}
-    P_{\text{keep}}(\mathbf{p}) = \eta_0 + (1 - \eta_0) \cdot \max\left(\mathbf{n}(\mathbf{p}) \cdot \frac{\mathbf{x}_{\text{lidar}} - \mathbf{p}}{\|\mathbf{x}_{\text{lidar}} - \mathbf{p}\|}, \, 0\right)^{\gamma}
+    P_{\text{keep}} = m_0 + (1 - m_0)s^p
     \end{equation}
     
-    \item \textbf{Model II: Vertical Top-Cap Elevation Isolation (Z-Axis Decoupling)} \\
-    Leveraging the ceiling viewpoint, this model preserves high-altitude returns (head/shoulders) while downsampling lower points (legs) where spatial proximity is closest:
+    \item \textbf{Sigmoid face-score model.} This method uses the same face score but applies a soft threshold. Points below the threshold are reduced more strongly, while points above it are mostly preserved:
     \begin{equation}
-    P_{\text{keep}}(\mathbf{p}) = \max\left(\beta_{\text{min}}, \, \beta_{\text{strength}} \cdot \frac{z_{\mathbf{p}}}{H_{\text{target}}}\right)
+    P_{\text{keep}} = m_0 + (1 - m_0)\frac{1}{1+\exp[-k_s(s-s_0)]}
     \end{equation}
     
-    \item \textbf{Model III: Range-Exponent Density Scaling ($d^{-\alpha}$ Decay)} \\
-    This model artificially amplifies the natural geometric dilution by introducing an independent decay exponent $\alpha$ to force earlier boundary point dropouts as distance increases:
+    \item \textbf{Density self-reinforcement model.} This method uses local point density from neighbor distance. For each point, $d_{k_n}$ is the distance to its $k_n$-th nearest neighbor, and $\rho_{\text{norm}}$ is the normalized density score:
     \begin{equation}
-    P_{\text{keep}}(\mathbf{p}) = \left( \frac{d_{\text{ref}}}{\max(d(\mathbf{p}), \, d_{\text{ref}})} \right)^{\alpha}
+    \rho = \frac{1}{d_{k_n}+\varepsilon}, \qquad
+    P_{\text{keep}} = m_0 + (1 - m_0)\rho_{\text{norm}}^q
     \end{equation}
 \end{itemize}
 
@@ -732,30 +732,32 @@ To push the system's operational tracking limit as close as possible to the idea
 \renewcommand{\arraystretch}{1.2}
 \begin{tabular}{llcc}
 \hline
-\textbf{Model Strategy} & \textbf{Core Control Parameter} & \textbf{Tested Range} & \textbf{Optimal Default} \\ \hline
-\textbf{Model I} (Grazing Angle)  & Sampling Strength Exponent ($\gamma$) & $0.5 \sim 2.0$        & $1.5$                    \\
-                                  & Base Survival Probability ($\eta_0$)  & $0.0 \sim 0.2$        & $0.08$                   \\ \hline
-\textbf{Model II} (Z-Elevation)   & Minimum Cutoff Ratio ($\beta_{\text{min}}$)  & $0.1 \sim 0.3$        & $0.18$                   \\
-                                  & Elevation Weight ($\beta_{\text{strength}}$) & $0.5 \sim 1.0$        & $0.75$                   \\ \hline
-\textbf{Model III} (Range Decay)  & Distance Decay Exponent ($\alpha$)    & $1.0 \sim 1.5$        & $1.10$                   \\
-                                  & Reference Slant Range ($d_{\text{ref}}$) & $1.0 \sim 2.0\text{ m}$ & $1.50\text{ m}$          \\ \hline
+\textbf{Model} & \textbf{Parameter} & \textbf{Meaning} & \textbf{Value} \\ \hline
+\textbf{Power-law} & $p$ & face-score power & $4$ \\
+                  & $m_0$ & minimum keep probability & $0.165$ \\ \hline
+\textbf{Sigmoid}  & $s_0$ & face-score threshold & $0.64$ \\
+                  & $k_s$ & threshold sharpness & $20$ \\
+                  & $m_0$ & minimum keep probability & $0.18$ \\ \hline
+\textbf{Density}  & $k_n$ & neighbor index for density & $9$ \\
+                  & $q$ & density-score power & $4$ \\
+                  & $m_0$ & minimum keep probability & $0.16$ \\ \hline
 \end{tabular}
-\caption{Parameter definitions and robust ranges for the three buffer amplification models.}
+\caption{Parameters used by the Power-law, Sigmoid, and Density buffer models.}
 \label{tab:aq5_parameters}
 \end{table}
 
-As illustrated in the evaluation matrix in \textbf{Figure 7}, systematically scanning these parameter ranges demonstrates that the engineered bubble buffer possesses exceptional robustness. Within the identified standard bounds, the active thinning models successfully withstand random structural measurement noise ($\sigma = 0.015\text{ m}$), consistently widening the protection zone without inducing early target loss.
+Figure 7 compares the baseline with the 3 active models. The result shows stable behavior under the tested settings and random structural noise ($\sigma = 0.015\text{ m}$). The active models increase the bubble gap, which means DBSCAN merging is delayed.
 
 \begin{center}
     \includegraphics[width=0.95\linewidth]{Figure7.png}
-    \captionof{figure}{Evaluation matrix for engineered bubble-buffer amplification under parameter sweeps and structural noise.}
+    \captionof{figure}{Bubble-buffer comparison for Baseline, Power-law, Sigmoid, and Density models.}
     \label{fig:aq5-engineered-buffer}
 \end{center}
 
 \vspace{0.8em}
-\textbf{3. Feasibility Analysis and Field-Tuning Outlook}
+\textbf{3. Practical Meaning}
 \\
-The practical feasibility of utilizing an expanded bubble buffer to prevent merging looks highly promising for indoor tracking. By adjusting simple mathematical probabilities on incoming coordinates, we achieve the same separation results as complex visual data-fusion, but with zero additional hardware cost. However, a major simulation constraint remains: real-world environment clutter, multipath reflections, and unexpected material absorption could distort the sharp boundaries of our simulated bubble. Future work must focus on empirical field-testing within the actual room setup to precisely tune these model parameters. Finding the optimal empirical balance will ensure the system gains maximum merge protection while maintaining high tracking sensitivity.
+These models suggest that a tracking pipeline can delay premature merging by adjusting point keep probabilities before clustering. The method does not require extra hardware, but real room data are still needed because clutter, reflections, and different materials may change the bubble shape. The next step is to tune the parameters on measured data and check whether ID separation improves without losing valid target points.
 \end{contentbox}
 
 % ==========================================
