@@ -407,7 +407,7 @@ By actively exploiting this property and strengthen the sparsity, the system can
 
 \boxitemtitle{2.4 3-Voter Mechanism for State Allocation}
 \begin{contentbox}
-In real tracking scenarios, merging and occlusion rarely occur in isolation. High-risk cases such as X-type crossings can contain both effects at the same time. As Figure~\ref{fig:x_crossing} illustrates, this may cause ID loss and ID switching. In this figure, the 3rd and 5th plots set the sensor position downward, while the other plots set the sensor position leftward. The dotted line represents the Kalman-filter prediction, and the solid line represents the ground truth.
+In real tracking scenarios, merging and occlusion often occur together. To study this combined failure mode, I built an X-type crossing model focused on the high-risk intersection where both point-cloud merging and occlusion can occur. Figure~\ref{fig:x_crossing} shows the accumulated point-cloud and evaluation results. Red and blue indicate the two different targets, while yellow indicates merged or ambiguous points where the two identities cannot be clearly separated. A triangle above a target indicates that the target is occluded, and the triangle size represents the occlusion ratio. The star marks the LiDAR position. Because this situation is strongly affected by viewpoint, the X-type motion is tested from two LiDAR positions. The last case is the only ID-loss case, and it exposes a limitation of the KF: after the targets merge in the high-risk area, the tracker can lose the turning direction information. The second row gives the evaluation more directly through occlusion ratio and tracking quality. The quality score is based on point density, so it is affected by both LiDAR-target distance and occlusion. Additional ground-truth trajectories, calibrated tracking trajectories, and oblique 3D accumulated point-cloud views are provided in AQ4.
 
 \begin{center}
     \includegraphics[width=1\textwidth]{Figure9.png}
@@ -649,27 +649,26 @@ When 2 targets are close or merged in the 2D plane, extra features such as heigh
 \end{itemize}
 \end{contentbox}
 
-\boxitemtitle{AQ4: Which Tracking Model Is Suitable under Occlusion?}
+\boxitemtitle{AQ4: Additional Graphs of X-Crossing Testing}
 \begin{contentbox}
-The tracking-model test uses the same 2-target LiDAR simulation family as the main report. Two rounded human targets move through crossing and turning cases, the ceiling-mounted LiDAR is placed either at the left side or bottom side of the room, and DBSCAN provides the frame-wise measurements for a Kalman-filter tracker. The purpose is to identify when a simple tracking model is still useful and when it becomes the main source of ID error.
+Figure~\ref{fig:aq4-tracking-model-overview} and Figure~\ref{fig:aq4-kf-stress-summary} provide supplementary views of the X-crossing experiments. They show the trajectory and RMSE analysis, together with oblique 3D accumulated point-cloud views and top-view summaries of the simulated two-person walking cases.
 
 \begin{center}
     \includegraphics[width=0.95\linewidth]{Figure8.png}
-    \captionof{figure}{Tracking-model stress test under multi-target crossing and turning motion.}
+    \captionof{figure}{Supplementary trajectory and RMSE analysis for the X-crossing test cases.}
     \label{fig:aq4-tracking-model-overview}
 \end{center}
 
-The result in Figure~\ref{fig:aq4-tracking-model-overview} shows that a standard constant-velocity KF is acceptable for short, smooth motion gaps, but it becomes fragile near intersections. At close range, clustering may merge the two point clouds, so the tracker receives either an ambiguous centroid or no reliable measurement.
+The scenario set contains three main motion types. In the parallel walking case, two people move with the same speed. Occlusion can still appear because both targets are located on the same side of the LiDAR; this simple case checks whether the KF can maintain prediction under weak ambiguity. In the X-straight cases, shown as the 2nd and 3rd columns, target A waits for nearly 1 second so that the closest distance is about $0.52~\mathrm{m}$, still larger than $2R=0.50~\mathrm{m}$. In the X-turn cases, the model includes acceleration, a circular turning radius around the joint point, and short acceleration phases at the start and end of the motion.
 
 \begin{center}
     \includegraphics[width=0.95\linewidth]{Figure10.png}
-    \captionof{figure}{Compact summary of KF prediction behavior during the high-risk crossing interval.}
+    \captionof{figure}{Oblique 3D accumulated point-cloud view and top-view summary for the X-crossing cases.}
     \label{fig:aq4-kf-stress-summary}
 \end{center}
 
-Figure~\ref{fig:aq4-kf-stress-summary} further supports the same conclusion: prediction can bridge a short missing interval, but long merge or occlusion periods require stronger association logic. EKF, IMM, particle filtering, or GMM-based tracking should be compared when the motion contains turning, stopping, or multiple possible future positions.
+These results show that LiDAR viewpoint is important. The same motion model can produce different merging and occlusion directions when observed from different sensor positions, so the judgement result may also change. Turning inside the high-risk region can remove direction information after merging, which suggests that future work should use additional independent signatures such as height, reflectivity, or other stable LiDAR-intrinsic features. Merging and occlusion are physically different: occlusion is mainly radial and front-back, while merging is caused by lateral distance shrinkage across the illuminated boundary. However, in complex crossing cases, both effects can happen at the same time.
 \end{contentbox}
-
 \boxitemtitle{AQ5: What Do the Extended X-Turn Experiments Reveal?}
 \begin{contentbox}
 This experiment focuses on the X-turn-bottom case. Two targets approach the crossing region, make nonlinear turns, and pass through the closest-distance interval under an OSDome-like LiDAR at $H=2.7~\mathrm{m}$. The setup uses 50 frames at $0.1~\mathrm{s}$ per frame, target radius $0.25~\mathrm{m}$, range-dependent sparsity, gait oscillation, and DBSCAN with $\epsilon=0.22~\mathrm{m}$ and $MinPts=14$.
