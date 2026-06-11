@@ -1,0 +1,913 @@
+\documentclass[11pt,a4paper]{report}
+
+% ---------- Packages ----------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[a4paper,margin=2cm]{geometry}
+\usepackage{setspace}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage[colorlinks=true, linkcolor=DeepBlue, urlcolor=DeepBlue, citecolor=DeepBlue]{hyperref}
+\usepackage[breakable,skins]{tcolorbox}
+\usepackage{amsmath}
+\usepackage{cite}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{tocloft}
+\usepackage{chngcntr}
+\usepackage{booktabs}
+\usepackage{tabularx}
+
+% ---------- Page layout ----------
+\setstretch{1.05}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.35em}
+
+% ---------- Continuous numbering ----------
+\counterwithout{figure}{chapter}
+\counterwithout{table}{chapter}
+\counterwithout{equation}{chapter}
+
+% ---------- Colors ----------
+\definecolor{DeepBlue}{RGB}{20,45,90}
+\definecolor{LightGray}{RGB}{245,245,245}
+\definecolor{DarkGray}{RGB}{80,80,80}
+
+% ---------- Chapter and TOC formatting ----------
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries\color{DeepBlue}}
+  {\chaptertitlename\ \thechapter}
+  {0.4em}
+  {}
+\titlespacing*{\chapter}{0pt}{-8pt}{18pt}
+
+\renewcommand{\cftchappresnum}{Chapter~}
+\setlength{\cftchapnumwidth}{7.2em}
+
+\newcommand{\startappendices}{%
+    \appendix
+    \addtocontents{toc}{\protect\renewcommand{\protect\cftchappresnum}{Appendix~}}
+    \addtocontents{toc}{\protect\setlength{\protect\cftchapnumwidth}{8.0em}}
+}
+
+% ---------- Custom Box Styles ----------
+\newtcolorbox{sectionintro}[1]{
+    colback=white,
+    colframe=DeepBlue,
+    boxrule=1pt,
+    breakable,
+    arc=2mm,
+    outer arc=2mm,
+    left=10pt,
+    right=10pt,
+    top=4pt,
+    bottom=8pt,
+    fontupper=\color{black},
+    title=\textbf{#1},
+    coltitle=white,
+    colbacktitle=DeepBlue,
+    attach boxed title to top left={yshift=-2mm, xshift=5mm},
+    boxed title style={sharp corners=south, size=small},
+    before skip=2pt,
+    after skip=8pt
+}
+
+\newtcolorbox{contentbox}{
+    colback=LightGray,
+    colframe=LightGray!80!DarkGray,
+    boxrule=0.5pt,
+    breakable,
+    arc=1.5mm,
+    outer arc=1.5mm,
+    left=10pt,
+    right=10pt,
+    top=8pt,
+    bottom=8pt,
+    fontupper=\small
+}
+
+\newcommand{\boxitemtitle}[1]{
+    \vspace{0.5em}
+    {\large\textbf{\color{DeepBlue} #1}}\par
+    \vspace{0.8em}
+}
+
+\begin{document}
+
+% ==========================================
+% COVER PAGE
+% ==========================================
+\begin{titlepage}
+    \begin{flushleft}
+        {\LARGE \textbf{EINDHOVEN UNIVERSITY OF TECHNOLOGY}} \\
+        \vspace{0.2cm}
+        {\large Department of Electrical Engineering} \\
+        {\small Electronic System}
+    \end{flushleft}
+
+    \vspace{3.5cm}
+
+    \begin{flushleft}
+        {\huge \textbf{Internship Report \& Research Logbook}} \\
+        \vspace{0.5cm}
+        {\Large Topic: Indoor Multi-Target Tracking and Occlusion Reasoning Using Ceiling-Mounted LiDAR}
+    \end{flushleft}
+
+    \vspace{3.5cm}
+
+    \begin{flushleft}
+        \begin{tabular}{ll}
+            \textbf{Student:} & Yehao Chen \\
+            \textbf{Student Number:} & 2216655 \\
+            \textbf{Email:} & \href{mailto:y.chen13@student.tue.nl}{y.chen13@student.tue.nl} \\
+            \textbf{Supervisor:} & Prof. dr. ir. Guido Dolmans \\
+            \textbf{Period:} & April 15 -- June 15 (9 weeks, incl. 2 weeks holiday) \\
+            \textbf{Credits:} & 10 ECTS (Applicable for HBO graduates)
+        \end{tabular}
+    \end{flushleft}
+
+    \vfill
+    \begin{center}
+        {\small This document contains the formal research report and the chronological logbook for the internship project.}
+    \end{center}
+\end{titlepage}
+
+% Front matter uses roman page numbering.
+\pagenumbering{roman}
+
+% ==========================================
+% LIST OF ABBREVIATIONS
+% ==========================================
+\chapter*{List of Abbreviations}
+\addcontentsline{toc}{chapter}{List of Abbreviations}
+
+\begin{itemize}[leftmargin=3cm, labelsep=1cm]
+    \item[\textbf{CFTA}] Coarse-Fine Triangle Algorithm
+    \item[\textbf{DBSCAN}] Density-Based Spatial Clustering of Applications with Noise
+    \item[\textbf{DL}] Deep Learning
+    \item[\textbf{DMD}] Dynamic Mode Decomposition
+    \item[\textbf{EKF}] Extended Kalman Filter
+    \item[\textbf{EOA}] Explicit Occlusion Adaption
+    \item[\textbf{EOT}] Extended Object Tracking
+    \item[\textbf{EPoD}] Expected Probability of Detection
+    \item[\textbf{FPS}] Frames Per Second
+    \item[\textbf{GMM}] Gaussian Mixture Model
+    \item[\textbf{ID}] Identification
+    \item[\textbf{IMU}] Inertial Measurement Unit
+    \item[\textbf{IMM}] Interacting Multiple Model
+    \item[\textbf{IoU}] Intersection over Union
+    \item[\textbf{KDRQ}] KD-tree Range Query
+    \item[\textbf{KF}] Kalman Filter
+    \item[\textbf{LiDAR}] Light Detection and Ranging
+    \item[\textbf{MC}] Monocular Camera
+    \item[\textbf{PCA}] Principal Component Analysis
+    \item[\textbf{RIBS}] Range and Intensity Background Subtraction
+    \item[\textbf{R-LIOM}] Reflectivity-Aware LiDAR-Inertial Odometry and Mapping
+    \item[\textbf{ROI}] Region of Interest
+    \item[\textbf{RQ}] Research Question
+    \item[\textbf{RTS}] Rauch--Tung--Striebel
+    \item[\textbf{ZUPT}] Zero-Velocity Update
+\end{itemize}
+
+\newpage
+\tableofcontents
+\newpage
+
+% Main matter starts from Introduction as page 1.
+\pagenumbering{arabic}
+
+% ==========================================
+\chapter{Introduction}
+% ==========================================
+
+\section*{Background and Motivation}
+Based on Yiyun Xu's previous research~\cite{xu2026indoorlocalization}, background subtraction and single-target tracking have been validated in a specific indoor configuration using a ceiling-mounted LiDAR at a height of 2.7~m. However, a major challenge appears when the system is extended from 1 target to multiple targets. When persons move close to each other, tracking performance can degrade because of point-cloud merging, mutual occlusion, and temporary detection loss. Therefore, this 7-week internship project investigates the transition from single-target localization to multi-target tracking. The objective is to develop lightweight LiDAR-intrinsic reasoning methods for handling occlusion and merging ambiguities without relying on external visual cues such as camera fusion.
+
+\section*{Research Questions}
+This project is structured around 4 research questions:
+
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{RQ1:} Can a ceiling-mounted LiDAR reliably separate and track multiple persons, using Yiyun Xu's single-person tracking framework as the baseline?
+    \item \textbf{RQ2:} Can a ceiling-mounted LiDAR reliably separate and track a heterogeneous mix of multiple targets, specifically persons and robots?
+    \item \textbf{RQ3:} Under which conditions does the tracking system fail, especially due to occlusion, spatial proximity, and point-density degradation?
+    \item \textbf{RQ4:} Is the resulting tracking trajectory quality sufficient to serve as an offline ground-truth evaluation standard?
+\end{enumerate}
+
+The theoretical analysis is presented in Chapter~2, and the direct answers to the research questions are summarized in Chapter~3.
+
+\newpage
+
+% ==========================================
+\chapter{Core Issues: Occlusion and Merging}
+% ==========================================
+
+
+
+\boxitemtitle{2.1 Simulation Setup}
+
+\begin{contentbox}
+\small
+\setlength{\abovedisplayskip}{4pt}
+\setlength{\belowdisplayskip}{4pt}
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.08}
+
+\subsection*{Simulation Framework}
+
+Due to the limited availability of multi-target ceiling-mounted LiDAR datasets, a simulation framework is introduced for preliminary analysis before real multi-person data collection. The goal is not to reproduce every hardware-level detail of the Ouster sensor, but to build a controllable and interpretable model for studying when LiDAR-only tracking starts to fail.
+
+\vspace{0.35em}
+
+The framework contains three main modules. First, the \textbf{point-cloud generation} module produces simplified human targets using a ceiling-mounted OSDome-like LiDAR model. It considers body geometry, a rounded head--shoulder cap, gait oscillation, range noise, distance-dependent sparsity, and visibility-dependent point distribution. Second, the \textbf{clustering and trajectory prediction} module estimates target positions frame by frame from the generated point clouds. This module is independent from the ground-truth trajectory, so the tracker does not directly know the true target center. Third, the \textbf{evaluation} module compares tracking performance based on criteria such as ID loss, merged-frame ratio, and trajectory quality.
+
+\vspace{0.45em}
+
+\begin{center}
+\begin{minipage}{0.6\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{Figure3.png}
+
+    \vspace{-0.2em}
+    \scriptsize (a) Simulated point-cloud distribution in one frame.
+\end{minipage}
+\hfill
+\begin{minipage}{0.35\linewidth}
+    \centering
+    \scriptsize
+    \begin{tabularx}{\linewidth}{@{}lX@{}}
+    \toprule
+    \textbf{Parameter} & \textbf{Value} \\
+    \midrule
+    LiDAR type & OSDome  \\
+    LiDAR height & $2.70~\mathrm{m} (0,0,2.7)$ \\
+    Frame rate & $10~\mathrm{Hz}$ \\
+    Azimuth samples & $1024$ \\
+    Vertical rings & $64$ \\
+    Beam angle range & $1^\circ$--$88^\circ$ \\
+    Human height & $1.72~\mathrm{m}$ \\
+    Body radius & $0.24~\mathrm{m}$ \\
+    Cap start height & $1.42~\mathrm{m}$ \\
+    Cap vertical height & $0.30~\mathrm{m}$ \\
+    Cap shape & rounded upper dome \\
+    Range noise & $0.010~\mathrm{m}$ \\
+    Distance exponent & $\gamma=1.1$ \\
+    Keep strength & $\lambda=0.45$ \\
+    Gait amplitude & $0.030~\mathrm{m}$ \\
+    Walking speed & $0.55~\mathrm{m/s}$ \\
+    \bottomrule
+    \end{tabularx}
+
+    \vspace{0.25em}
+    \scriptsize (b) Main parameters used in the simulation.
+\end{minipage}
+
+\vspace{0.25em}
+\captionof{figure}{Single-frame point-cloud generation and main simulation parameters.}
+\label{fig:single_frame_and_parameters}
+\end{center}
+
+\vspace{0.35em}
+
+Compared with the earlier surface-sampling model, the updated point-cloud generation uses a ray-casting strategy. Each angular cell of the LiDAR emits one ray, and each ray contributes at most one first-return point after intersecting with the simplified human model. Therefore, the visible surface and distance-dependent sparsity are produced more naturally by the sensor geometry itself, instead of first generating a complete object surface and then manually deleting points. More details about the idea of ray-casting and density decay with distance growing will be elaborated on the next part.
+\newpage
+
+\subsection*{Ray-Casting Model and Density Attenuation}
+
+To seamlessly integrate the aforementioned parameters, the point-cloud generator replicates the physical ray-casting mechanism of an Ouster LiDAR onto a customized dome-cylinder model. For instance, an OS1 model with a $1024 \times 128$ resolution operating at 10 Hz casts approximately 1.31 million rays per frame. While virtual rays propagate indefinitely, this casting mechanism intuitively explains point cloud acquisition: as the rays travel farther, the unit area they cover expands, which inherently reduces the spatial point density.
+
+This density attenuation phenomenon can be interpreted through two distinct perspectives:
+\begin{itemize}
+    \item \textbf{Coordinate Jacobian Scaling:} Transforming the sensor's native polar/spherical measurements into the Cartesian tracking space introduces a spatial amplification factor via the Jacobian determinant. While the 2D planar projection scales linearly with distance ($d$), the 3D volume scales quadratically ($\cos\phi \times d^2$). Since the number of emitted rays remains constant, distributing them over a quadratically expanding volume naturally decreases the density.
+    \item \textbf{Areal Density and Projection:} Given a constant number of rays within a fixed solid angle, the physical differential area intersected by these beams forms a rectangle approximated by $(d \Delta\theta) \times (d \Delta\phi)$. Projecting this into a top-down view introduces an additional $\cos\phi$ factor, fundamentally confirming the density's $d^{-2}$ inverse-square proportionality. Notably, this $\cos\phi$ projection implies an exceptionally high-density region directly beneath the sensor, which is typically excluded from standard tracking analyses.
+\end{itemize}
+
+In practical measurements, the actual density decay deviates from the ideal $-2$ exponent, aligning closer to $-1.1$ after applying fitting model to Xu's data results. Because the ray-casting engine intrinsically accounts for the geometric spatial expansion, directly applying a strict $1/d^2$ random point deletion would erroneously double-count the distance effect. Consequently, the simulation incorporates a weakened, distance-dependent ``keep probability'' function to purely model the supplementary non-geometric signal attenuation without over-sparsifying distant targets.
+
+
+\begin{center}
+\begin{minipage}{0.57\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{Figure2.png}
+
+    \vspace{-0.2em}
+    \scriptsize (a) Simulated accumulated top-view point cloud.
+\end{minipage}
+\hfill
+\begin{minipage}{0.39\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{Figure4.png}
+
+    \vspace{-0.2em}
+    \scriptsize (b) Xu's accumulated top-view measurement.
+\end{minipage}
+
+\captionof{figure}{Comparison between the simulated and measured accumulated top-view point clouds.}
+\label{fig:simulated_measured_accumulated_clouds}
+\end{center}
+
+\vspace{0.35em}
+
+As illustrated in Figure \ref{fig:simulated_measured_accumulated_clouds}, the simulated point cloud (left) effectively mirrors the actual real-world measurement (right). Driven by the simulated human trajectory and the integrated point-cloud model, the generated data accurately captures the dynamic walking sway, the view-dependent density variations (denser on surfaces facing the sensor), and the subtle sparsity at extended ranges. Overall, this customized generative model provides a highly reliable and interpretable foundation for conducting preliminary analyses on multi-target clustering, merging phenomena, and occlusion handling.
+
+\end{contentbox}
+\newpage
+
+\boxitemtitle{2.2 Occlusion: Geometric Shadow Derivation and Ordered Layer}
+
+\begin{contentbox}
+\small
+\setlength{\abovedisplayskip}{4pt}
+\setlength{\belowdisplayskip}{4pt}
+
+\subsection*{Geometric Shadow Derivation}
+
+Occlusion occurs when 1 target enters the geometric shadow cast by another target. In a 2D sectional view, the shadow length $e$ is
+\[
+e = \frac{h \cdot d}{H-h},
+\]
+where $H$ is the sensor height, $h$ is the target height, and $d$ is the radial distance from the target to the sensor. In 3D, this length expands into a fan-shaped shadow because of the LiDAR's angular sampling.
+
+\begin{center}
+    \includegraphics[width=0.9\textwidth]{Figure1.png}
+    \vspace{-0.4em}
+    \captionof{figure}{Top-down projection and fan-shaped geometric shadow leading to occlusion.}
+    \label{fig:shadow_derivation}
+\end{center}
+
+\vspace{-0.8em}
+\subsection*{Ordered Layers by Distance}
+
+To reduce occlusion complexity, an \textbf{ordered layer} strategy~\cite{advancingMOT2024} can be introduced, where targets are processed from near to far according to their distance from the LiDAR.
+
+\begin{center}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{0.92}
+\begin{tabular}{p{0.28\linewidth} p{0.52\linewidth} p{0.12\linewidth}}
+\hline
+\textbf{Step} & \textbf{Interpretation} & \textbf{Count} \\
+\hline
+\textbf{1. Unordered} &
+Each target pair has 5 possible states: no occlusion, $T_i$ partially or fully occludes $T_j$, and $T_j$ partially or fully occludes $T_i$. &
+$5^{\frac{N(N-1)}{2}}$
+\\
+\textbf{2. Depth ordered} &
+Depth ordering removes back-to-front occlusion, reducing each pair to 3 states: none, partial, and full. &
+$3^{\frac{N(N-1)}{2}}$
+\\
+\textbf{3. Shadow union} &
+Targets are scanned from near to far. Each new target is checked against 1 accumulated shadow instead of all previous targets independently. &
+$3^{N-1}$
+\\
+\hline
+\end{tabular}
+\captionof{table}{Reduction of occlusion-state space using depth ordering and cumulative shadow union.}
+\label{tab:occlusion_state_reduction}
+\end{center}
+
+For 3 targets, the joint occlusion configurations are reduced from $5^3=125$ in the unordered case to $3^2=9$ after depth ordering and cumulative shadow union. This number describes the occlusion-state space rather than the exact runtime. In implementation, the strategy requires 1 depth-sorting step and 1 near-to-far scan, giving an approximate cost of $O(N\log N + N)$ instead of exhaustive pairwise reasoning.
+
+\end{contentbox}
+\newpage
+
+\boxitemtitle{2.3 Merging: A Margin Problem}
+\begin{contentbox}
+To isolate the merging behavior, a simulation was established under strict ideal conditions: two targets, modeled as rounded cylinders with identical radii ($R$), moving at the same speed along a symmetric V-shaped trajectory without mutual occlusion. From a polar-coordinate perspective, occlusion and merging manifest as fundamentally different spatial phenomena. Occlusion is predominantly a \textit{radial} issue, occurring when targets share a similar angular azimuth ($\theta$) but differ in radial depth ($\rho$). Conversely, merging is a \textit{circumferential} problem when their absolute spatial distance across the horizontal plane becomes too narrow for clustering algorithms like DBSCAN to partition them.
+
+\vspace*{0.2em}
+The theoretical clustering failure point is defined by a margin encompassing the physical contact distance, the DBSCAN search radius ($\epsilon$), and a double-sided $3\sigma$ confidence boundary for measurement noise:
+\begin{equation}
+D_{\text{theory}} = 2R + \epsilon + \Delta_{\text{boundary}} \quad (\text{where } \Delta_{\text{boundary}} = 6\sigma_{\text{noise}}).
+\end{equation}
+
+
+\begin{minipage}[t]{0.42\textwidth}
+\vspace{0pt} % Ensures flawless top-alignment of the text block
+\small
+However, the ray-casting simulation reveals a gap between this theoretical prediction and the actual merge point. Due to the inherent angular sparsity of LiDAR beams along the mutually facing curved surfaces of the cylinders, an ``invisible air buffer'' forms. The algorithm requires the targets to physically "protect" further past $D_{\text{theory}}$ before their sparse boundary point densities overlap sufficiently to form a connected cluster.
+
+\vspace*{0.5em}
+Consequently, the merging threshold is more accurately interpreted as a dynamic margin interval $[2R, D_{\text{theory}}]$ rather than a static spatial distance (see Figure~\ref{fig:bubble_effect}). This observation yields a critical insight for tracking robustness: because merging relies on the sparse point distribution along the annular edges, this natural sparsity intrinsically delays the clustering failure, pushing the actual merge point remarkably close to the physical contact limit. 
+
+\vspace*{0.5em}
+By actively exploiting this property and strengthen the sparsity, the system can artificially enlarge this ``air buffer''. Such a strategy may act as a geometric protective mechanism even under severe spatial proximity.
+\end{minipage}%
+\hfill
+\begin{minipage}[t]{0.55\textwidth}
+\vspace{0pt} % Ensures flawless top-alignment of the image graphic
+\centering
+\includegraphics[width=\textwidth]{Figure5.png}
+\captionof{figure}{Simulation of the margin gap along a V-shaped trajectory, illustrating the theoretical merge threshold versus the actual sparse-point merge event.}
+\label{fig:bubble_effect}
+\end{minipage}
+\end{contentbox}
+\newpage
+
+\boxitemtitle{2.4 3-Voter Mechanism for State Allocation}
+\begin{contentbox}
+In real tracking scenarios, merging and occlusion rarely occur in isolation. High-risk cases such as X-type crossings can contain both effects at the same time. As Figure~\ref{fig:x_crossing} illustrates, this may cause ID loss and ID switching. In this figure, the 3rd and 5th plots set the sensor position downward, while the other plots set the sensor position leftward. The dotted line represents the Kalman-filter prediction, and the solid line represents the ground truth.
+
+\begin{center}
+    \includegraphics[width=1\textwidth]{Figure_5.png}
+    \captionof{figure}{Tracking failures, including ID loss and ID switching, during a complex X-type crossing.}
+    \label{fig:x_crossing}
+\end{center}
+
+To reduce these ambiguities, I propose a \textbf{3-Voter Mechanism} inspired by multi-attribute voting~\cite{gomez2023efficient}. Its core objective is state allocation, for example assigning a ``Wait'' state during unavoidable merging. When spatial coordinates alone are unreliable, 3 independent layers estimate whether a cluster contains 1 or multiple IDs.
+
+\begin{center}
+    \renewcommand{\arraystretch}{1.4}
+    \small
+    \begin{tabular}{|p{0.25\linewidth}|p{0.68\linewidth}|}
+        \hline
+        \textbf{Voter Layer} & \textbf{Mechanism and Necessity} \\
+        \hline
+        \textbf{1. Material and Physical Attributes} &
+        Uses LiDAR-intrinsic cues such as reflectivity~\cite{dong2023rliom} and height profiles to distinguish targets with different physical properties. This is especially useful for human-robot separation. \\
+        \hline
+        \textbf{2. Morphology \newline (Shape and Area)} &
+        Detects geometric anomalies such as sudden bounding-area expansion or figure-eight contours. Since natural human motion can also change shape, this voter should be validated by the other layers. \\
+        \hline
+        \textbf{3. Kinematics \newline (Historical Trajectory)} &
+        Uses historical velocity and predicted motion to identify high-risk merge zones before spatial clustering fully fails. This helps prepare the state machine in advance. \\
+        \hline
+    \end{tabular}
+    \captionof{table}{The 3 assessment layers of the 3-Voter Mechanism.}
+    \label{tab:3_voter}
+\end{center}
+
+\vspace*{0.8em}
+If the voters confirm that multiple targets are present within 1 cluster, the tracker should avoid immediate ID overwriting. Instead, the uncertain target can be kept in a ``Wait'' state and then recovered after separation using the kinematic and physical voters.
+\end{contentbox}
+
+% ==========================================
+\chapter{Research Questions}
+% ==========================================
+\boxitemtitle{RQ1: Multi-Person Tracking}
+\begin{contentbox}
+\textbf{Can a ceiling-mounted LiDAR reliably separate and track multiple persons, using Yiyun Xu's single-person tracking framework as the baseline?}
+
+\vspace{0.8em}
+\textbf{Answer:} Not reliably under all conditions. The single-person framework is a useful baseline for foreground segmentation and centroid extraction, but multi-person tracking introduces a new problem: ID persistence. For 1 person, a temporary detection gap mainly affects localization accuracy. For multiple persons, the same gap may cause ID switches, trajectory fragmentation, or false merging.
+
+\vspace{0.6em}
+Reliability mainly depends on 2 constraints. First, the visible point clouds must remain separable enough for clustering. Once the inter-target distance enters the merging margin, DBSCAN may collapse multiple persons into 1 cluster. Second, occlusions must be short enough for the tracker to bridge them using prediction and re-identification. A constant-velocity Kalman filter is a reasonable baseline, but it is not robust enough for sharp turns, crossings, stops, and close interactions.
+
+\vspace{0.6em}
+\textit{Conclusion:} A ceiling-mounted LiDAR can support multi-person tracking in sparse indoor scenes, but it cannot be considered reliably scalable without additional data-association logic. The proposed 3-Voter Mechanism, together with stronger filtering models such as EKF, IMM, particle filtering, or GMM-based tracking, should be investigated to preserve IDs during merged or occluded intervals.
+\end{contentbox}
+
+\boxitemtitle{RQ2: Mixed-Target Tracking}
+\begin{contentbox}
+\textbf{Can a ceiling-mounted LiDAR reliably separate and track a heterogeneous mix of multiple targets, specifically persons and robots?}
+
+\vspace{0.8em}
+\textbf{Answer:} This case is more promising than human-human tracking because persons and robots usually have more distinguishable LiDAR signatures. Robots often contain metallic or plastic surfaces, regular planar structures, sharp edges, and stable geometric shapes. Human bodies are softer, more irregular, and more time-varying because of clothing, limbs, and gait motion.
+
+\vspace{0.6em}
+I would use 3 main LiDAR-intrinsic cues for this case:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Reflectivity:} Different surface materials may generate different reflectivity patterns. R-LIOM shows that reflectivity can be used as an additional LiDAR information channel rather than only as a visualization layer~\cite{dong2023rliom}.
+    \item \textbf{Geometry:} Robots are usually more regular in height, width, bounding-box shape, surface-normal distribution, and local roughness, while human point clouds are more deformable.
+    \item \textbf{Height:} In a ceiling-mounted setup, height filtering is especially useful. Xu's single-person pipeline already showed that a head-region centroid is more stable than a full-body centroid.
+\end{itemize}
+
+\vspace{0em}
+The complexity is still limited by target density. Depth ordering and cumulative shadow union can simplify the occlusion reasoning, but dense crowds or many robots in the same small space will still create severe shadows, cluster merging, and ID ambiguity.
+
+\vspace{0.6em}
+\textit{Conclusion:} Mixed human-robot tracking is likely easier than separating multiple similar human targets, provided that the robot has a stable shape and material signature. The next step should be real indoor testing with both persons and robots, so that target-specific feature fingerprints can be integrated into the Reflectivity Voter, Geometry Voter, and Kinematics Voter.
+\end{contentbox}
+
+\newpage
+
+\boxitemtitle{RQ3: Failure Conditions}
+\begin{contentbox}
+\textbf{Under which conditions does the current tracking system fail?}
+
+\vspace{0.8em}
+\textbf{Answer:} The current tracking system is most likely to fail under the following conditions:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Target proximity:} When the distance between targets enters the DBSCAN merging margin, multiple targets may be detected as 1 cluster.
+    \item \textbf{Mutual occlusion:} A target can temporarily disappear inside another target's geometric shadow, causing missed detections and uncertain ID assignment.
+    \item \textbf{Distance-related density loss:} Because of fixed angular resolution, farther targets receive fewer points. This can weaken clustering, centroid estimation, and shape-based classification.
+    \item \textbf{Motion-model mismatch:} A constant-velocity prediction can fail when a target turns sharply, stops, accelerates, or intentionally changes direction near an intersection.
+    \item \textbf{Environmental noise:} Reflective surfaces, partial visibility, foreground extraction errors, and clothing variation can dominate the centimeter-scale sparsity margin observed in simulation.
+\end{itemize}
+
+\textit{Conclusion:} Tracking failure is caused by the interaction of physical target size, DBSCAN parameters, view-dependent sparsity, occlusion ratio, and motion-model mismatch. Therefore, the failure boundary should be treated as a multi-variable condition rather than 1 fixed distance threshold.
+\end{contentbox}
+
+\boxitemtitle{RQ4: Data Quality for Evaluation}
+\begin{contentbox}
+\textbf{Is the resulting trajectory quality sufficient for offline ground-truth evaluation in complex indoor environments?}
+
+\vspace{0.8em}
+\textbf{Answer:}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{For single-person tracking:} Xu's work shows that a ceiling-mounted LiDAR system can provide a reasonably accurate reference trajectory, especially when head-centroid tracking and LiDAR-IMU fusion are used.
+    \item \textbf{For multi-target tracking:} The trajectory is not yet sufficient as an absolute ground-truth standard, because ID switches, merged clusters, and trajectory fragmentation become more important than single-centroid localization error.
+    \item \textbf{Required evaluation variables:} Effective point-cloud radius, minimum merge distance, point-density decay, occlusion ratio, ID switches, track fragmentation, and recovery time should be added to the evaluation.
+    \item \textbf{Practical use:} The trajectory can currently serve as a useful offline benchmark or qualitative reference, but real multi-target experiments are still required before it can be treated as reliable ground truth.
+\end{itemize}
+\end{contentbox}
+
+\newpage
+
+% ==========================================
+\chapter{Future Work \& Conclusion}
+% ==========================================
+\begin{sectionintro}{Next Steps}
+This paragraph translates the theoretical framework established during the internship into concrete implementation and validation steps.
+\end{sectionintro}
+
+\begin{contentbox}
+Based on the methods derived and simulated over the past 7 weeks, the next steps are:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Empirical field validation:} Test the centimeter-scale sparsity-induced margin in the real laboratory setup and study how sensor noise, clothing, target orientation, and dynamic reflections change the merge threshold.
+    \item \textbf{3-Voter implementation:} Implement the Morphology, Kinematics, and Reflectivity voters in the existing pipeline to flag merging events and trigger the Wait/Recover state machine.
+    \item \textbf{Advanced filtering models:} Compare standard KF, EKF, IMM, particle filtering, and GMM-based tracking for nonlinear motion and multi-hypothesis recovery during deep occlusion.
+    \item \textbf{Human-robot feature testing:} Collect mixed person-robot data and extract reflectivity, height, roughness, and surface-normal fingerprints for target classification.
+\end{itemize}
+\end{contentbox}
+
+\begin{sectionintro}{Final Summary}
+This paragraph summarizes the 7-week research scope on multi-target tracking using a ceiling-mounted LiDAR.
+\end{sectionintro}
+
+\begin{contentbox}
+This internship project investigated the gap between single-target localization and multi-target tracking using a ceiling-mounted LiDAR. By deriving the fan-shaped occlusion shadow and introducing depth-ordered shadow union, I showed that complex mutual occlusion can be simplified into a near-to-far sequential reasoning problem. The simulation also showed that point-cloud sparsity can create a dynamic merging margin rather than 1 fixed merge distance. Finally, the proposed 3-Voter Mechanism combines geometry, trajectory history, and reflectivity to support ID preservation when spatial clustering becomes ambiguous. These findings provide a theoretical and computational foundation for future real-data experiments on robust indoor multi-target tracking.
+\end{contentbox}
+
+\newpage
+\startappendices
+
+% ==========================================
+\chapter{Literature Analysis}
+% ==========================================
+\begin{sectionintro}{Theoretical Models}
+This appendix summarizes the main papers and the models that can be reused in the current project.
+\end{sectionintro}
+
+\boxitemtitle{Continuous Indoor Localization through LiDAR and IMU Sensor Fusion~\cite{xu2026indoorlocalization}}
+\begin{contentbox}
+    \textbf{KDRQ Model:} A KD-tree range query compares each incoming LiDAR point with a pre-built static background model. Points without nearby background neighbors are classified as foreground. \\
+    \textbf{Application:} This is the baseline foreground segmentation strategy for ceiling-mounted LiDAR localization. It supports per-frame centroid extraction and provides a reference for evaluating single-person trajectory quality. \\
+    \textbf{Additional Use:} The head-centroid idea can be extended to multi-person tracking by treating the head region as a more stable measurement source during partial body occlusion.
+\end{contentbox}
+
+\boxitemtitle{Person Tracking in Three-Dimensional Laser Range Data with Explicit Occlusion Adaption~\cite{schoeler2011occlusion}}
+\begin{contentbox}
+    \textbf{EOA Model:} The observation weight is adapted using ray-traced occlusion ratios. The expected number of observed points decreases when the visible ratio decreases. \\
+    \textbf{Application:} This supports visible-ratio-based confidence modeling during partial and full occlusion. \\
+    \textbf{Additional Use:} The same principle can be used to reduce the measurement weight in a Kalman or particle filter when a target is only partially visible.
+\end{contentbox}
+
+\boxitemtitle{Efficient Detection and Tracking of Human Using 3D LiDAR Sensor~\cite{gomez2023efficient}}
+\begin{contentbox}
+    \textbf{ROI-Tracking Model:} Predicted regions of interest are extracted first. Voxelization, segmentation, geometric classification, and tracking are then applied only to high-probability target regions. \\
+    \textbf{Application:} This justifies reducing computational cost by processing only dynamic or predicted regions, which is useful for real-time multi-person tracking. \\
+    \textbf{Additional Use:} Its voting-style shape, normal, and shadow classifiers directly motivate the proposed Morphology and Visibility voters.
+\end{contentbox}
+
+\boxitemtitle{Multi-body Target Indoor Positioning System Based on Fusion of LiDAR and Monocular Camera~\cite{xiong2022multibody}}
+\begin{contentbox}
+    \textbf{MC Model:} Monocular-camera detections are mapped into the LiDAR point cloud using calibrated intrinsic and extrinsic parameters, so that human-related point clouds can be extracted more reliably. \\
+    \textbf{Application:} This supports the idea that additional sensing information can resolve ambiguities when pure point-cloud clustering becomes unreliable. \\
+    \textbf{Additional Use:} Although this internship focuses on LiDAR-only tracking, the camera-fusion result can serve as an upper-bound comparison for multi-target separability.
+\end{contentbox}
+
+\boxitemtitle{Dynablox: Real-Time Detection of Diverse Dynamic Objects in Complex Environments~\cite{schmid2023dynablox}}
+\begin{contentbox}
+    \textbf{Dynablox Model:} Dynamic objects are detected when points appear in previously high-confidence free space. A volumetric map is maintained to distinguish static structure from newly occupied regions. \\
+    \textbf{Application:} This justifies free-space-based dynamic object detection and introduces evaluation metrics such as dynamic-point IoU, real-time FPS, and robustness under complex indoor geometry. \\
+    \textbf{Additional Use:} High-confidence free-space reasoning can be adapted to identify unexpected target reappearance after occlusion.
+\end{contentbox}
+
+\boxitemtitle{Deep Learning-Based Real-Time Human Detection System Using LiDAR Data for Smart Healthcare Monitoring~\cite{kalashtari2024deeplidar}}
+\begin{contentbox}
+    \textbf{DL Model:} 3D LiDAR data are converted into 2D reflectivity images and processed with a YOLO-based detector for real-time human detection. \\
+    \textbf{Application:} This provides a learning-based comparison method and shows that reflectivity images can support human detection. \\
+    \textbf{Additional Use:} The reflectivity-image idea can inspire a lightweight non-DL descriptor for distinguishing human clothing from robot surfaces.
+\end{contentbox}
+
+\boxitemtitle{Roadside LiDAR Vehicle Detection and Tracking Using Range and Intensity Background Subtraction~\cite{zhang2022roadside}}
+\begin{contentbox}
+    \textbf{RIBS Model:} Range and intensity channels are transformed into structured spatio-temporal matrices. Background and foreground are separated using DMD and CFTA. \\
+    \textbf{Application:} This supports the use of non-geometric LiDAR channels, especially range and intensity, for background subtraction and dynamic target extraction. \\
+    \textbf{Additional Use:} The structured matrix representation can inspire a time-window view of ceiling-LiDAR point density and reflectivity changes.
+\end{contentbox}
+
+\boxitemtitle{Advancing Multi-Object Tracking through Occlusion-Awareness and Trajectory Optimization~\cite{advancingMOT2024}}
+\begin{contentbox}
+    \textbf{Layered Association Model:} Occluded targets are separated into priority layers for sequential data association. Track states such as Wait, Restore, and Delete are used to handle uncertain observations. \\
+    \textbf{Application:} This supports the Wait/Recover state logic in the proposed 3-Voter Mechanism. \\
+    \textbf{Additional Use:} The layered idea can be combined with depth ordering so that near targets are processed before far targets in multi-person occlusion reasoning.
+\end{contentbox}
+
+\boxitemtitle{Occlusion-Aware Multi-Object Tracking via Expected Probability of Detection~\cite{epodMOT2024}}
+\begin{contentbox}
+    \textbf{EPoD Model:} Detection probability is adjusted according to expected visibility under object occlusion. Lower visibility leads to lower measurement confidence. \\
+    \textbf{Application:} This supports visible-ratio-based measurement weighting in Kalman or Gaussian-mixture tracking. \\
+    \textbf{Additional Use:} EPoD can be used as a formal bridge between geometric shadow modeling and probabilistic track confidence.
+\end{contentbox}
+
+\boxitemtitle{Reflectivity-Aware LiDAR-Inertial Odometry and Mapping~\cite{dong2023rliom}}
+\begin{contentbox}
+    \textbf{Reflectivity-Aware Model:} Reflectivity is used as an additional LiDAR attribute to improve residual computation, local mapping, pseudo-visual image generation, and loop detection. \\
+    \textbf{Application:} This supports exploiting non-geometric LiDAR information, such as reflectivity or intensity, to improve point selection, map consistency, and trajectory reliability. \\
+    \textbf{Additional Use:} Reflectivity can become a target fingerprint for mixed human-robot tracking, especially when geometry alone is ambiguous during cluster merging.
+\end{contentbox}
+
+\newpage
+% ==========================================
+\chapter{Weekly Reports}
+% ==========================================
+\begin{sectionintro}{Overview}
+This appendix provides a chronological record of progress and supervisor discussions. It highlights technical milestones and future plans.
+\end{sectionintro}
+
+\boxitemtitle{Week 1: Orientation}
+\begin{contentbox}
+    \begin{itemize}[leftmargin=*, nosep]
+        \item Attended Yiyun Xu's thesis defense to understand the research background of indoor localization.
+        \item Analyzed the core methodology of the previous work, focusing on LiDAR-IMU sensor fusion, KDRQ, and head-centroid extraction.
+        \item Identified the key research challenges related to dynamic target tracking and occlusion in cluttered indoor environments.
+    \end{itemize}
+\end{contentbox}
+
+\boxitemtitle{Week 2: Occlusion Geometry}
+\begin{contentbox}
+    \begin{itemize}[leftmargin=*, nosep]
+        \item Derived the geometric occlusion model and quantified the blind-zone length as $e = \frac{h \cdot d}{H-h}$.
+        \item Evaluated L-shaped point-cloud data to analyze the geometric characteristics of human targets during movement.
+    \end{itemize}
+\end{contentbox}
+
+\boxitemtitle{Week 3: Literature Review}
+\begin{contentbox}
+    \begin{itemize}[leftmargin=*, nosep]
+        \item Reviewed 3 papers related to occlusion-aware tracking.
+        \item Extracted useful ideas for observation weighting, visibility reasoning, and multi-target association.
+    \end{itemize}
+\end{contentbox}
+
+\boxitemtitle{Week 4: Model Upgrade}
+\begin{contentbox}
+    \begin{itemize}[leftmargin=*, nosep]
+        \item Created the project log file on Overleaf.
+        \item Extended the blind-zone model from 1D length to a 2D fan-shaped shadow, forming the basis of the occlusion testing model.
+        \item Proposed several simulation scenarios for multi-target tracking and merging analysis.
+    \end{itemize}
+\end{contentbox}
+
+\boxitemtitle{Week 5: Simulation Framework and Occlusion Modeling}
+\begin{contentbox}
+    \begin{itemize}[leftmargin=*, nosep]
+        \item Built a 3-module framework: scenario-driven point-cloud generation, core multi-target tracking, and performance evaluation.
+        \item Improved simulation realism by including target geometry, target number, motion patterns, point noise, one-sided sparsity, gait-induced centroid oscillation, occlusion shadows, and cluster merging.
+        \item Analyzed the merging problem between 2 moving targets and identified a sparsity-induced separation margin that can delay premature DBSCAN merging.
+        \item Extended the occlusion discussion from 2-target cases to more complex multi-target cases, including X-crossing motion and potential ID loss.
+    \end{itemize}
+\end{contentbox}
+
+\boxitemtitle{Week 6: Distance Attenuation and Sensor-Resolution Discussion}
+\begin{contentbox}
+    \begin{itemize}[leftmargin=*, nosep]
+        \item Introduced a point-count attenuation factor to describe the decrease in point-cloud density as the target-LiDAR distance increases.
+        \item Extracted the attenuation factor from Xu's data and fitted a regression model after excluding unreliable boundary points.
+        \item Connected the attenuation model with the Ouster angular-resolution limitation: when the target is farther away, fewer laser rays hit the object.
+        \item Discussed with supervisors that another researcher may have a method for compensating accuracy degradation caused by distance and angular resolution.
+        \item Summarized the potential of using additional LiDAR information beyond geometry, especially reflectivity, to improve robustness under sparse or degraded point-cloud conditions.
+        \item Received the R-LIOM paper and planned to study how reflectivity can support the current tracking model.
+    \end{itemize}
+\end{contentbox}
+
+\boxitemtitle{Week 7: Wrap-Up and Reporting}
+\begin{contentbox}
+    \begin{itemize}[leftmargin=*, nosep]
+        \item Wrapped up the final research report.
+        \item Reviewed the R-LIOM paper and summarized its relevance to reflectivity-aware tracking.
+        \item Drafted the 3-Voter Mechanism and the causal chain of multi-target degradation.
+    \end{itemize}
+\end{contentbox}
+
+\boxitemtitle{Week 8: Preparation for defense}
+\begin{contentbox}
+    \begin{itemize}[leftmargin=*, nosep]
+        \item Arranging files and prepare for a defense presentation at June 16th
+        \item Orientation for thesis project
+    \end{itemize}
+\end{contentbox}
+
+\newpage
+% ==========================================
+\chapter{Additional Questions}
+% ==========================================
+\begin{sectionintro}{Auxiliary Analysis}
+This appendix records auxiliary questions that complement the main research scope and preserve useful ideas for future work.
+\end{sectionintro}
+
+\boxitemtitle{AQ1: Mathematical Derivations of Density Attenuation}
+\begin{contentbox}
+The non-uniform distribution of LiDAR point clouds in Cartesian space can be demonstrated through two converging mathematical approaches: an intuitive geometric footprint analysis and a rigorous coordinate transformation proof.
+
+\vspace{0.6em}
+\textbf{1. Intuitive Geometric Footprint (Area Method):}
+
+A LiDAR sensor fires laser beams at fixed angular increments: horizontal ($\Delta\theta$) and vertical ($\Delta\phi$). At a radial distance $d$, the physical arc lengths spanned by these increments are $d\Delta\theta$ and $d\Delta\phi$, respectively. Treating the minimal scanning unit as an approximate rectangle, the cross-sectional area $A(d)$ covered by a single laser pulse expands as:
+\[
+A(d) \approx (d\Delta\theta) \times (d\Delta\phi) = d^2 \Delta\theta \Delta\phi
+\]
+Since the total number of emitted rays is constant $C$, the spatial point density $\rho(d)$ is inversely proportional to this expanded area:
+\[
+\rho(d) \approx \frac{C}{A(d)} \propto \frac{1}{d^2 \Delta\theta \Delta\phi} \propto d^{-2}
+\]
+
+\vspace{0.6em}
+\textbf{2. Rigorous Proof via Jacobian Matrix Transformation:}
+
+This geometric scaling effect can be formally corroborated by calculating the volume change when mapping from the sensor's spherical coordinates $(d, \theta, \phi)$ to the Cartesian coordinate system $(x, y, z)$. The mapping equations are:
+\[
+x = d\cos\phi\cos\theta, \quad y = d\cos\phi\sin\theta, \quad z = d\sin\phi
+\]
+The spatial scaling factor—representing how much a unit volume expands during this transformation—is precisely the determinant of the Jacobian matrix ($|J_{3D}|$):
+\[
+|J_{3D}| = \begin{vmatrix} 
+\frac{\partial x}{\partial d} & \frac{\partial x}{\partial \theta} & \frac{\partial x}{\partial \phi} \\ 
+\frac{\partial y}{\partial d} & \frac{\partial y}{\partial \theta} & \frac{\partial y}{\partial \phi} \\ 
+\frac{\partial z}{\partial d} & \frac{\partial z}{\partial \theta} & \frac{\partial z}{\partial \phi} 
+\end{vmatrix} = d^2 \cos\phi
+\]
+Consequently, the minimal Cartesian volume element expands to $dV = |J_{3D}| \, dd \, d\theta \, d\phi = (d^2\cos\phi) \, dd \, d\theta \, d\phi$.
+
+\vspace{0.6em}
+\textbf{Insight: Convergence of Both Methods}
+
+Both the straightforward geometric footprint approximation and the rigorous multivariate calculus derivation independently converge on the exact same mathematical truth: the Cartesian spatial scaling factor is dominated by $d^2$. This geometric distortion dictates that the point cloud surface density attenuates quadratically with range ($\rho \propto d^{-2}$). This proves that distant targets will inherently suffer from spatial sparsity, imposing a fundamental physical constraint on the sensor's resolution limit. This also relates to the room-size limit and it is not apparent compared to other factors deviating the density in a room of $10 m^2$.
+\end{contentbox}
+
+\boxitemtitle{AQ1: Nonlinear Complexity of Multi-Target Occlusion}
+\begin{contentbox}
+Tracking complexity scales nonlinearly with the number of targets. While 2-target occlusion is relatively straightforward, 3 or more targets introduce mutual dependencies and overlapping shadows. If all pairwise occlusion relations are enumerated directly, the number of possible states grows very quickly.
+
+\vspace{0.6em}
+\textbf{Core Idea:}
+
+For 1 unordered target pair, there are 5 possible occlusion states: no occlusion, target $T_i$ partially or fully occludes target $T_j$, and target $T_j$ partially or fully occludes target $T_i$. After sorting targets by radial distance from the LiDAR, the farther target cannot physically occlude the closer target. This removes the physically impossible back-to-front cases.
+
+\vspace{0.8em}
+\textbf{From Pairwise Tables to Cumulative Shadow:}
+
+\begin{center}
+\small
+\begin{tabular}{p{0.30\linewidth} p{0.30\linewidth} p{0.30\linewidth}}
+\hline
+\textbf{Step} & \textbf{Interpretation} & \textbf{State Count} \\
+\hline
+\textbf{1. Unordered pairwise} &
+Each target pair is checked independently. Each pair has 5 possible states. &
+$5^{\frac{N(N-1)}{2}}$
+\\
+\textbf{2. Depth ordered pairwise} &
+Depth ordering removes back-to-front occlusion. Each pair is reduced to 3 states: none, partial, and full. &
+$3^{\frac{N(N-1)}{2}}$
+\\
+\textbf{3. Ordered shadow union} &
+Targets are scanned from near to far. Each new target is checked only against 1 accumulated shadow, not against all previous targets independently. &
+$3^{N-1}$
+\\
+\hline
+\end{tabular}
+\end{center}
+
+\vspace{0.9em}
+\textbf{Why Cumulative Shadow Reduces the State Space:}
+
+Assume the targets are sorted as $r_1 < r_2 < \cdots < r_N$. The closest target $T_1$ is treated as visible and starts the first shadow. Then $T_2$ is checked against the shadow of $T_1$, $T_3$ is checked against the accumulated shadow of $T_1$ and $T_2$, and so on. Therefore, only $N-1$ near-to-far visibility checks are needed. Each check has 3 possible outcomes: none, partial, and full. Therefore, the physical state complexity becomes $3^{N-1}$.
+\end{contentbox}
+
+\boxitemtitle{AQ2: Can Extra LiDAR Features Help Separate Humans and Robots?}
+\begin{contentbox}
+While studying LiDAR sensors and the real room setup, I found that the point cloud contains more information than only the 2D position. Since this project focuses on LiDAR-only tracking, useful features should be selected from the LiDAR data itself instead of relying on extra cameras or complicated calibration.
+
+\vspace{1.0em}
+\textbf{Core Idea:}
+
+When 2 targets are close or merged in the 2D plane, extra features such as height, point density, reflectivity, and motion can reduce ambiguity. This is especially useful for human-robot tracking because a person and a robot usually have different vertical sizes, surface regularity, material reflectivity, and motion patterns.
+
+\vspace{0.8em}
+\textbf{Useful Feature Groups:}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Geometry Features:} Height, vertical extent, width, bounding-box size, and head region.
+    \item \textbf{Material Features:} Reflectivity distribution, intensity stability, and material-dependent return patterns.
+    \item \textbf{Visibility Features:} Visible point ratio, point density, shadow area, and point loss.
+    \item \textbf{Motion Features:} Velocity, acceleration, smoothness, turning behavior, and gait oscillation.
+\end{itemize}
+\end{contentbox}
+
+\boxitemtitle{AQ3: Which Tracking Model Is Suitable under Occlusion?}
+\begin{contentbox}
+While reading papers about occlusion-aware tracking, I found that there are many possible filtering and prediction models, such as KF, EKF, IMM, particle filter, and GMM-based tracking. The best choice depends on scene complexity, target motion, and available sensor information.
+
+\vspace{1.0em}
+\textbf{Core Idea:}
+
+A simple constant-velocity KF is suitable as a first baseline. It is fast, easy to explain, and can bridge short missing-measurement periods. However, when the target turns sharply, is fully occluded for a long time, or has multiple possible future positions, a simple KF may not be enough.
+
+\vspace{0.8em}
+\textbf{Possible Tracking Models:}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{KF:} Suitable for simple and smooth motion.
+    \item \textbf{EKF:} Useful when the motion or measurement model becomes nonlinear.
+    \item \textbf{IMM:} Useful when the target can switch between motion modes, such as walking straight, stopping, and turning.
+    \item \textbf{Particle Filter:} Useful for severe occlusion or multi-hypothesis tracking.
+    \item \textbf{GMM:} Useful when 1 merged cluster may actually contain 2 targets.
+\end{itemize}
+\end{contentbox}
+
+\boxitemtitle{AQ4: Can an Elliptical Human Model Improve Multi-Target Boundary Analysis?}
+\begin{contentbox}
+In the current simulation, each person is simplified as a circular or cylindrical object. This is useful as a baseline. However, a real human body is not perfectly circular in the horizontal plane. From a top-view LiDAR perspective, the human footprint is usually closer to an anisotropic shape with different length and width.
+
+\vspace{1.0em}
+\textbf{Core Idea:}
+
+Instead of using 1 fixed radius in all directions, the human target can be represented by an elliptical effective boundary. The ellipse describes the directional size of the observed human point cloud, while the walking direction provides temporal information about target orientation.
+
+\vspace{0.8em}
+\textbf{Main Challenges:}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Orientation Ambiguity:} The ellipse requires direction information, but the true body heading cannot always be clearly observed from 1 LiDAR frame.
+    \item \textbf{Point-Cloud Degradation:} During merging, occlusion, or sparse sampling at long distance, the cluster shape may be incomplete, making the fitted ellipse unstable.
+\end{itemize}
+\end{contentbox}
+
+\boxitemtitle{AQ5: Can the "Bubble Effect" be Leveraged as an Active Strategy to Prevent Cluster Merging?}
+\begin{contentbox}
+The discovery of the view-dependent "Bubble Effect" opens a new tactical avenue for multi-target tracking. Instead of treating cluster merging as an unavoidable failure point, this section explores whether the underlying physical mechanisms causing this delay can be artificially exploited to create a robust protection buffer.
+
+\vspace{0.8em}
+\textbf{1. Origin and Physics of the Natural Bubble Buffer}
+\\
+The natural bubble effect stems from point-cloud sparsity when two targets move along a trajectory where their interaction vector is perpendicular to the LiDAR's incident rays. As demonstrated in \textbf{Figure 6}, because the ceiling-mounted sensor views targets from a specific radial viewpoint, the points on the tangential boundaries and rear surfaces become structurally sparse. Density-based clustering algorithms, such as DBSCAN, rely strictly on a local point density threshold defined by the spatial search radius ($\epsilon$) and the minimum neighborhood points ($MinPts$). When two targets approach closely, the visual erosion on their adjacent flanks creates a low-density gap where the point spacing exceeds $\epsilon$. Consequently, the algorithm experiences a "spatial hysteresis," delaying the identity-destroying merge event. This lag creates a natural buffer zone, allowing the tracking system to maintain separated identities even when the actual geometric footprints have breached the theoretical dense merge threshold ($2R + \epsilon$).
+
+\vspace{0.8em}
+\textbf{2. Active Amplification via Engineered Sparsity Models}
+\\
+To push the system's operational tracking limit as close as possible to the ideal physical contact boundary ($2R$), we can intentionally amplify this buffer. By artificially engineering the point density in high-risk proximity zones, we can prevent premature cluster merging. Within this project's scope, three mathematical models have been established to systematically enhance this phenomenon:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Model I: Grazing-Angle Ray Attenuation (Surface Squeezing)} \\
+    This model artificially drops points whose surface normals are nearly orthogonal to the incoming laser ray vector $\mathbf{v}$, thinning the touching borders:
+    \begin{equation}
+    P_{\text{keep}}(\mathbf{p}) = \eta_0 + (1 - \eta_0) \cdot \max\left(\mathbf{n}(\mathbf{p}) \cdot \frac{\mathbf{x}_{\text{lidar}} - \mathbf{p}}{\|\mathbf{x}_{\text{lidar}} - \mathbf{p}\|}, \, 0\right)^{\gamma}
+    \end{equation}
+    
+    \item \textbf{Model II: Vertical Top-Cap Elevation Isolation (Z-Axis Decoupling)} \\
+    Leveraging the ceiling viewpoint, this model preserves high-altitude returns (head/shoulders) while downsampling lower points (legs) where spatial proximity is closest:
+    \begin{equation}
+    P_{\text{keep}}(\mathbf{p}) = \max\left(\beta_{\text{min}}, \, \beta_{\text{strength}} \cdot \frac{z_{\mathbf{p}}}{H_{\text{target}}}\right)
+    \end{equation}
+    
+    \item \textbf{Model III: Range-Exponent Density Scaling ($d^{-\alpha}$ Decay)} \\
+    This model artificially amplifies the natural geometric dilution by introducing an independent decay exponent $\alpha$ to force earlier boundary point dropouts as distance increases:
+    \begin{equation}
+    P_{\text{keep}}(\mathbf{p}) = \left( \frac{d_{\text{ref}}}{\max(d(\mathbf{p}), \, d_{\text{ref}})} \right)^{\alpha}
+    \end{equation}
+\end{itemize}
+
+\begin{table}[h!]
+\centering
+\small
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{llcc}
+\hline
+\textbf{Model Strategy} & \textbf{Core Control Parameter} & \textbf{Tested Range} & \textbf{Optimal Default} \\ \hline
+\textbf{Model I} (Grazing Angle)  & Sampling Strength Exponent ($\gamma$) & $0.5 \sim 2.0$        & $1.5$                    \\
+                                  & Base Survival Probability ($\eta_0$)  & $0.0 \sim 0.2$        & $0.08$                   \\ \hline
+\textbf{Model II} (Z-Elevation)   & Minimum Cutoff Ratio ($\beta_{\text{min}}$)  & $0.1 \sim 0.3$        & $0.18$                   \\
+                                  & Elevation Weight ($\beta_{\text{strength}}$) & $0.5 \sim 1.0$        & $0.75$                   \\ \hline
+\textbf{Model III} (Range Decay)  & Distance Decay Exponent ($\alpha$)    & $1.0 \sim 1.5$        & $1.10$                   \\
+                                  & Reference Slant Range ($d_{\text{ref}}$) & $1.0 \sim 2.0\text{ m}$ & $1.50\text{ m}$          \\ \hline
+\end{tabular}
+\caption{Parameter definitions and robust ranges for the three buffer amplification models.}
+\label{tab:aq5_parameters}
+\end{table}
+
+As illustrated in the evaluation matrix in \textbf{Figure 7}, systematically scanning these parameter ranges demonstrates that the engineered bubble buffer possesses exceptional robustness. Within the identified standard bounds, the active thinning models successfully withstand random structural measurement noise ($\sigma = 0.015\text{ m}$), consistently widening the protection zone without inducing early target loss.
+
+\vspace{0.8em}
+\textbf{3. Feasibility Analysis and Field-Tuning Outlook}
+\\
+The practical feasibility of utilizing an expanded bubble buffer to prevent merging looks highly promising for indoor tracking. By adjusting simple mathematical probabilities on incoming coordinates, we achieve the same separation results as complex visual data-fusion, but with zero additional hardware cost. However, a major simulation constraint remains: real-world environment clutter, multipath reflections, and unexpected material absorption could distort the sharp boundaries of our simulated bubble. Future work must focus on empirical field-testing within the actual room setup to precisely tune these model parameters. Finding the optimal empirical balance will ensure the system gains maximum merge protection while maintaining high tracking sensitivity.
+\end{contentbox}
+
+\newpage
+\addcontentsline{toc}{chapter}{References}
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}
