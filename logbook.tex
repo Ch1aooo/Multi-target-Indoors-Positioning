@@ -407,11 +407,11 @@ By actively exploiting this property and strengthen the sparsity, the system can
 
 \boxitemtitle{2.4 3-Voter Mechanism for State Allocation}
 \begin{contentbox}
-In real tracking scenarios, merging and occlusion often occur together. To study this combined failure mode, I built an X-type crossing model focused on the high-risk intersection where both point-cloud merging and occlusion can occur. Figure~\ref{fig:x_crossing} shows the accumulated point-cloud and evaluation results. Red and blue indicate the two different targets, while yellow indicates merged or ambiguous points where the two identities cannot be clearly separated. A triangle above a target indicates that the target is occluded, and the triangle size represents the occlusion ratio. The star marks the LiDAR position. Because this situation is strongly affected by viewpoint, the X-type motion is tested from two LiDAR positions. The last case is the only ID-loss case, and it exposes a limitation of the KF: after the targets merge in the high-risk area, the tracker can lose the turning direction information. The second row gives the evaluation more directly through occlusion ratio and tracking quality. The quality score is based on point density, so it is affected by both LiDAR-target distance and occlusion. Additional ground-truth trajectories, calibrated tracking trajectories, and oblique 3D accumulated point-cloud views are provided in AQ4.
+In real tracking scenarios, merging and occlusion do not appear as two isolated phenomena. They can occur separately, overlap for a short interval, or interact in a more complex way when targets enter the same high-risk region. To study this behavior, I simulated an X-shaped two-person model, as shown in Figure~\ref{fig:x_crossing}. The 1st column is a parallel-walking case, where the yellow star marks the LiDAR position. The 2nd and 3rd columns are straight X-crossing cases observed from different LiDAR viewpoints, and the 4th and 5th columns are X-turn cases where both targets turn near the crossing focus. In the accumulated point-cloud row, red and blue indicate the two identities, yellow indicates merged or ambiguous points, and the triangle markers indicate occluded centroids with marker size related to the occlusion ratio. The lower row describes visibility and tracking-quality features. Since the quality score is based on point density, it is jointly affected by LiDAR-target distance and by occlusion. Among these cases, only the 5th case produces an ID loss/swap, although the tracker still keeps an approximate position. The most direct conclusion is that when turning occurs inside the high-risk region, a simple KF prediction can lose the turning-direction information after merging. More details, including ground-truth trajectories, accumulated point clouds, calibrated tracking trajectories, and oblique 3D accumulated point-cloud views, are provided in AQ4.
 
 \begin{center}
     \includegraphics[width=1\textwidth]{Figure9.png}
-    \captionof{figure}{Tracking failures, including ID loss and ID switching, during a complex X-type crossing.}
+    \captionof{figure}{Accumulated point clouds, occlusion ratios, tracking quality, and merge states for the X-shaped two-person crossing model.}
     \label{fig:x_crossing}
 \end{center}
 
@@ -649,53 +649,27 @@ When 2 targets are close or merged in the 2D plane, extra features such as heigh
 \end{itemize}
 \end{contentbox}
 
-\boxitemtitle{AQ4: Additional Graphs of X-Crossing Testing}
+\boxitemtitle{AQ4: Supplementary Details for the X-Crossing Experiment}
 \begin{contentbox}
-Figure~\ref{fig:aq4-tracking-model-overview} and Figure~\ref{fig:aq4-kf-stress-summary} provide supplementary views of the X-crossing experiments. They show the trajectory and RMSE analysis, together with oblique 3D accumulated point-cloud views and top-view summaries of the simulated two-person walking cases.
+This appendix item provides supplementary views for the X-crossing experiment in Section 2.4. Figure~\ref{fig:aq4-tracking-model-overview} focuses on the true motion and the calibrated KF tracking result. The first row shows the ground-truth motion models for the 5 test cases. In the parallel case, the 2 targets use identical object models and move with the same speed. All cases include short acceleration and deceleration phases at the beginning and end, while the middle part of each route is approximately uniform-speed motion. In the 2nd and 3rd columns, the targets move straight through the X-shaped crossing. To keep the motion physically valid, target A waits for about $1~\mathrm{s}$, so the 2 targets do not overlap; the closest distance is about $0.52~\mathrm{m}$, which is still larger than the radius sum $2R=0.50~\mathrm{m}$. In the 4th and 5th columns, the targets turn near the crossing focus. These turns include centripetal acceleration and a small circular arc, so the trajectories remain physically plausible.
 
 \begin{center}
     \includegraphics[width=0.95\linewidth]{Figure8.png}
-    \captionof{figure}{Supplementary trajectory and RMSE analysis for the X-crossing test cases.}
+    \captionof{figure}{Ground-truth trajectories, calibrated KF trajectories, and RMSE values for the X-crossing test cases.}
     \label{fig:aq4-tracking-model-overview}
 \end{center}
 
-The scenario set contains three main motion types. In the parallel walking case, two people move with the same speed. Occlusion can still appear because both targets are located on the same side of the LiDAR; this simple case checks whether the KF can maintain prediction under weak ambiguity. In the X-straight cases, shown as the 2nd and 3rd columns, target A waits for nearly 1 second so that the closest distance is about $0.52~\mathrm{m}$, still larger than $2R=0.50~\mathrm{m}$. In the X-turn cases, the model includes acceleration, a circular turning radius around the joint point, and short acceleration phases at the start and end of the motion.
+The second row of Figure~\ref{fig:aq4-tracking-model-overview} adds the RMSE information and compares the true trajectories with the calibrated KF tracks. The dashed prediction lines usually lean toward the LiDAR-observed side of the point cloud, because the sensor-facing side has denser measurements and therefore contributes more strongly to the estimated trajectory.
 
 \begin{center}
     \includegraphics[width=0.95\linewidth]{Figure10.png}
-    \captionof{figure}{Oblique 3D accumulated point-cloud view and top-view summary for the X-crossing cases.}
+    \captionof{figure}{Oblique 3D accumulated point-cloud views for the X-crossing cases.}
     \label{fig:aq4-kf-stress-summary}
 \end{center}
 
-These results show that LiDAR viewpoint is important. The same motion model can produce different merging and occlusion directions when observed from different sensor positions, so the judgement result may also change. Turning inside the high-risk region can remove direction information after merging, which suggests that future work should use additional independent signatures such as height, reflectivity, or other stable LiDAR-intrinsic features. Merging and occlusion are physically different: occlusion is mainly radial and front-back, while merging is caused by lateral distance shrinkage across the illuminated boundary. However, in complex crossing cases, both effects can happen at the same time.
-\end{contentbox}
-\boxitemtitle{AQ5: What Do the Extended X-Turn Experiments Reveal?}
-\begin{contentbox}
-This experiment focuses on the X-turn-bottom case. Two targets approach the crossing region, make nonlinear turns, and pass through the closest-distance interval under an OSDome-like LiDAR at $H=2.7~\mathrm{m}$. The setup uses 50 frames at $0.1~\mathrm{s}$ per frame, target radius $0.25~\mathrm{m}$, range-dependent sparsity, gait oscillation, and DBSCAN with $\epsilon=0.22~\mathrm{m}$ and $MinPts=14$.
+Figure~\ref{fig:aq4-kf-stress-summary} gives an oblique 3D accumulated point-cloud view, making the 2 walking trajectories and the LiDAR-view dependence easier to observe. This experiment studies a small set of variables, but it already shows that the same motion model can produce different tracking outcomes from different LiDAR viewpoints. The result changes when merged points are visible from one side, or when occlusion removes too many points from another side.
 
-\begin{center}
-    \includegraphics[width=0.95\linewidth]{Figure11.png}
-    \captionof{figure}{X-turn trajectory response showing KF prediction error around the nonlinear maneuver.}
-    \label{fig:aq5-xturn-kf}
-\end{center}
-
-Figure~\ref{fig:aq5-xturn-kf} shows the main limitation of a purely linear KF. The constant-velocity assumption predicts forward inertia, so the estimated state can lag or overshoot when the target turns sharply. This problem is most visible near the crossing point, where the measurements are also least reliable because the two targets are close.
-
-\begin{center}
-    \includegraphics[width=0.95\linewidth]{Figure12.png}
-    \captionof{figure}{Visibility and point-quality changes during the same close-interaction experiment.}
-    \label{fig:aq5-visibility-quality}
-\end{center}
-
-Figure~\ref{fig:aq5-visibility-quality} explains why the tracking failure is not only a filter problem. The point cloud depends strongly on the LiDAR viewpoint. A ceiling or top-side view can preserve more planar separation, while a side or bottom view can create larger geometric shadows. When one target blocks the other, the rear target receives fewer valid points and the measurement confidence drops.
-
-\begin{center}
-    \includegraphics[width=0.95\linewidth]{Figure13.png}
-    \captionof{figure}{3D tracker-assigned point clouds showing view-dependent sparsity, shadows, and merged states.}
-    \label{fig:aq5-3d-viewpoint}
-\end{center}
-
-Figure~\ref{fig:aq5-3d-viewpoint} summarizes the system-level result. LiDAR does not observe the full object surface; it mainly sees the sensor-facing side and misses regions behind the first visible target. Therefore, the tracker should treat LiDAR placement as a design variable. The tracking model, clustering parameters, and 3-Voter state logic should be tuned together for the chosen installation viewpoint.
+The main conclusion is that turning inside a high-risk crossing region can make a simple linear filter fail, especially after merging removes direction information. More advanced filters, such as EKF, IMM, particle filtering, or GMM-based tracking, should therefore be considered in future work. Since point-cloud-only evidence is still limited, future models can also use stronger target fingerprints, especially height information along the $Z$ axis and reflectivity features. Finally, merging and occlusion are physically different failure modes. They do not have a direct causal relationship in most frames, and most target states are neither merged nor occluded. However, when targets become close in real multi-person motion, the 2 effects can overlap during a short high-risk interval. The stable physical features learned from the non-merged and non-occluded parts of the trajectory can be used to support trajectory prediction during these brief ambiguous intervals.
 \end{contentbox}
 
 \boxitemtitle{AQ6: Can an Elliptical Human Model Improve Multi-Target Boundary Analysis?}
@@ -775,12 +749,36 @@ Let $m_0$ be the minimum keep probability. Let $s \in [0,1]$ be the face score, 
 \label{tab:aq7_parameters}
 \end{table}
 
-Figure~\ref{fig:aq7-engineered-buffer} compares the baseline with the 3 active models. The result shows stable behavior under the tested settings and random structural noise ($\sigma = 0.015\text{ m}$). The active models increase the bubble gap, which means DBSCAN merging is delayed.
+Figure~\ref{fig:aq7-engineered-buffer} compares the baseline with the 3 active models. The result shows stable behavior under the tested settings and random structural noise ($\sigma = 0.015\text{ m}$). Because the plotted gap is the distance between the actual DBSCAN merge point and physical contact, a lower gap is better: it means the cluster merge is delayed until the targets are closer to real contact.
 
 \begin{center}
     \includegraphics[width=0.95\linewidth]{Figure7.png}
     \captionof{figure}{Bubble-buffer comparison for Baseline, Power-law, Sigmoid, and Density models.}
     \label{fig:aq7-engineered-buffer}
+\end{center}
+
+Figures~\ref{fig:aq7-baseline-powerlaw-detail}--\ref{fig:aq7-merge-zoom-detail} provide enlarged views of the same AQ7 experiment. They are not new experiments, but clearer local views of the Figure~\ref{fig:aq7-engineered-buffer} result. Figure~\ref{fig:aq7-baseline-powerlaw-detail} compares the baseline and Power-law models at the theoretical merge point, actual DBSCAN merge point, and physical-contact point. The baseline merges at a spacing of about $0.69~\mathrm{m}$, while the Power-law model delays the actual merge to about $0.55~\mathrm{m}$, much closer to the $0.50~\mathrm{m}$ contact distance.
+
+\begin{center}
+    \includegraphics[width=0.95\linewidth]{Figure11.png}
+    \captionof{figure}{Enlarged comparison of Baseline and Power-law bubble-buffer behavior.}
+    \label{fig:aq7-baseline-powerlaw-detail}
+\end{center}
+
+Figure~\ref{fig:aq7-sigmoid-density-detail} gives the same enlarged comparison for the Sigmoid and Density models. The Sigmoid model merges at about $0.58~\mathrm{m}$, while the Density model merges at about $0.62~\mathrm{m}$. This makes the tradeoff more visible: all 3 active models reduce premature merging compared with the baseline, but they do not produce exactly the same point-cloud shape or merge spacing.
+
+\begin{center}
+    \includegraphics[width=0.95\linewidth]{Figure12.png}
+    \captionof{figure}{Enlarged comparison of Sigmoid and Density bubble-buffer behavior.}
+    \label{fig:aq7-sigmoid-density-detail}
+\end{center}
+
+Figure~\ref{fig:aq7-merge-zoom-detail} zooms into the actual DBSCAN merge frame for the 4 models. This view helps the reader see the boundary-point distribution more clearly. The active models keep fewer points near the facing boundary, so the connected cluster appears later and closer to physical contact.
+
+\begin{center}
+    \includegraphics[width=0.95\linewidth]{Figure13.png}
+    \captionof{figure}{Zoomed actual-merge views for Baseline, Power-law, Sigmoid, and Density models.}
+    \label{fig:aq7-merge-zoom-detail}
 \end{center}
 
 \vspace{0.8em}
