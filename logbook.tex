@@ -407,18 +407,40 @@ By actively exploiting this property and strengthen the sparsity, the system can
 
 \boxitemtitle{2.4 3-Voter Mechanism for State Allocation}
 \begin{contentbox}
-In real tracking scenarios, merging and occlusion do not appear as two isolated phenomena. They can occur separately, overlap for a short interval, or interact in a more complex way when targets enter the same high-risk region. To study this behavior, I simulated an X-shaped two-person model, as shown in Figure~\ref{fig:x_crossing}. The 1st column is a parallel-walking case, where the yellow star marks the LiDAR position. The 2nd and 3rd columns are straight X-crossing cases observed from different LiDAR viewpoints, and the 4th and 5th columns are X-turn cases where both targets turn near the crossing focus. In the accumulated point-cloud row, red and blue indicate the two identities, yellow indicates merged or ambiguous points, and the triangle markers indicate occluded centroids with marker size related to the occlusion ratio. The lower row describes visibility and tracking-quality features. Since the quality score is based on point density, it is jointly affected by LiDAR-target distance and by occlusion. Among these cases, only the 5th case produces an ID loss/swap, although the tracker still keeps an approximate position. The most direct conclusion is that when turning occurs inside the high-risk region, a simple KF prediction can lose the turning-direction information after merging. More details, including ground-truth trajectories, accumulated point clouds, calibrated tracking trajectories, and oblique 3D accumulated point-cloud views, are provided in AQ4.
+\begin{minipage}[t]{0.57\textwidth}
+\vspace{0pt}
+In practical tracking, merging and occlusion may occur separately or briefly overlap when targets enter the same high-risk region. Figure~\ref{fig:x_crossing} tests 5 two-person cases: parallel walking, straight X-crossing from 2 LiDAR viewpoints, and X-turning from the same viewpoints. Only the X-turn-bottom case produces ID loss/swap; the KF still keeps an approximate position, but loses reliable turning-direction information after merging. Supplementary ground-truth, calibrated tracking, and 3D accumulated-cloud views are given in AQ4.
+\end{minipage}%
+\hfill
+\begin{minipage}[t]{0.39\textwidth}
+\vspace{0pt}
+\scriptsize
+\renewcommand{\arraystretch}{0.92}
+\begin{tabular}{p{0.34\linewidth} p{0.58\linewidth}}
+\hline
+\textbf{Cue} & \textbf{Meaning} \\
+\hline
+Red/blue & 2 target identities \\
+Yellow & merged or ambiguous points \\
+Star & LiDAR position \\
+Triangles & occluded centroids; size follows occlusion ratio \\
+Lower row & occlusion ratio, density-based quality, and merge flag \\
+\hline
+\end{tabular}
+\end{minipage}
 
+\vspace{-0.2em}
 \begin{center}
     \includegraphics[width=1\textwidth]{Figure9.png}
+    \vspace{-0.5em}
     \captionof{figure}{Accumulated point clouds, occlusion ratios, tracking quality, and merge states for the X-shaped two-person crossing model.}
     \label{fig:x_crossing}
 \end{center}
 
-To reduce these ambiguities, I propose a \textbf{3-Voter Mechanism} inspired by multi-attribute voting~\cite{gomez2023efficient}. Its core objective is state allocation, for example assigning a ``Wait'' state during unavoidable merging. When spatial coordinates alone are unreliable, 3 independent layers estimate whether a cluster contains 1 or multiple IDs.
+To reduce these ambiguities, a \textbf{3-Voter Mechanism} is proposed for state allocation, such as assigning a ``Wait'' state during unavoidable merging. When spatial coordinates alone are unreliable, 3 independent layers estimate whether 1 cluster contains multiple IDs.
 
 \begin{center}
-    \renewcommand{\arraystretch}{1.4}
+    \renewcommand{\arraystretch}{1.2}
     \small
     \begin{tabular}{|p{0.25\linewidth}|p{0.68\linewidth}|}
         \hline
