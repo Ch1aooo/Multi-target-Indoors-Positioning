@@ -220,7 +220,7 @@ Due to the limited availability of multi-target ceiling-mounted LiDAR datasets, 
 
 \vspace{0.35em}
 
-The framework contains three main modules. First, the \textbf{point-cloud generation} module produces simplified human targets using a ceiling-mounted OSDome-like LiDAR model. It considers body geometry, a rounded head--shoulder cap, gait oscillation, range noise, distance-dependent sparsity, and visibility-dependent point distribution. Second, the \textbf{clustering and trajectory prediction} module estimates target positions frame by frame from the generated point clouds. This module is independent from the ground-truth trajectory, so the tracker does not directly know the true target center. Third, the \textbf{evaluation} module compares tracking performance based on criteria such as ID loss, merged-frame ratio, and trajectory quality.
+The framework contains 3 main modules. 1) The \textbf{point-cloud generation} module produces simplified human targets using a ceiling-mounted OSDome-like LiDAR model. It considers body geometry, a rounded head--shoulder cap, gait oscillation, range noise, distance-dependent sparsity, and visibility-dependent point distribution. 2) The \textbf{clustering and trajectory prediction} module estimates target positions frame by frame from the generated point clouds. This module is independent from the ground-truth trajectory, so the tracker does not directly know the true target center. 3) The \textbf{evaluation} module compares tracking performance based on criteria such as ID loss, merged-frame ratio, and trajectory quality.
 
 \vspace{0.45em}
 
@@ -230,7 +230,7 @@ The framework contains three main modules. First, the \textbf{point-cloud genera
     \includegraphics[width=\linewidth]{Figure3.png}
 
     \vspace{-0.2em}
-    \scriptsize (a) Simulated point-cloud distribution in one frame.
+    \scriptsize (a) Simulated point-cloud distribution in 1 frame.
 \end{minipage}
 \hfill
 \begin{minipage}{0.35\linewidth}
@@ -270,20 +270,20 @@ The framework contains three main modules. First, the \textbf{point-cloud genera
 
 \vspace{0.35em}
 
-Compared with the earlier surface-sampling model, the updated point-cloud generation uses a ray-casting strategy. Each angular cell of the LiDAR emits one ray, and each ray contributes at most one first-return point after intersecting with the simplified human model. Therefore, the visible surface and distance-dependent sparsity are produced more naturally by the sensor geometry itself, instead of first generating a complete object surface and then manually deleting points. More details about the idea of ray-casting and density decay with distance growing will be elaborated on the next part.
+Compared with the earlier surface-sampling model, the updated point-cloud generation uses a ray-casting strategy. Each angular cell of the LiDAR emits 1 ray, and each ray contributes at most 1 initial-return point after intersecting with the simplified human model. Therefore, the visible surface and distance-dependent sparsity are produced more naturally by the sensor geometry itself, instead of generating a complete object surface and then manually deleting points. The next part further explains ray-casting and density decay as distance increases.
 \newpage
 
 \subsection*{Ray-Casting Model and Density Attenuation}
 
 To seamlessly integrate the aforementioned parameters, the point-cloud generator replicates the physical ray-casting mechanism of an Ouster LiDAR onto a customized dome-cylinder model. For instance, an OS1 model with a $1024 \times 128$ resolution operating at 10 Hz casts approximately 1.31 million rays per frame. While virtual rays propagate indefinitely, this casting mechanism intuitively explains point cloud acquisition: as the rays travel farther, the unit area they cover expands, which inherently reduces the spatial point density.
 
-This density attenuation phenomenon can be interpreted through two distinct perspectives:
+This density attenuation phenomenon can be interpreted through 2 perspectives:
 \begin{itemize}
     \item \textbf{Coordinate Jacobian Scaling:} Transforming the sensor's native polar/spherical measurements into the Cartesian tracking space introduces a spatial amplification factor via the Jacobian determinant. While the 2D planar projection scales linearly with distance ($d$), the 3D volume scales quadratically ($\cos\phi \times d^2$). Since the number of emitted rays remains constant, distributing them over a quadratically expanding volume naturally decreases the density.
     \item \textbf{Areal Density and Projection:} Given a constant number of rays within a fixed solid angle, the physical differential area intersected by these beams forms a rectangle approximated by $(d \Delta\theta) \times (d \Delta\phi)$. Projecting this into a top-down view introduces an additional $\cos\phi$ factor, fundamentally confirming the density's $d^{-2}$ inverse-square proportionality. Notably, this $\cos\phi$ projection implies an exceptionally high-density region directly beneath the sensor, which is typically excluded from standard tracking analyses.
 \end{itemize}
 
-In practical measurements, the actual density decay deviates from the ideal $-2$ exponent, aligning closer to $-1.1$ after applying fitting model to Xu's data results. Because the ray-casting engine intrinsically accounts for the geometric spatial expansion, directly applying a strict $1/d^2$ random point deletion would erroneously double-count the distance effect. Consequently, the simulation incorporates a weakened, distance-dependent ``keep probability'' function to purely model the supplementary non-geometric signal attenuation without over-sparsifying distant targets.
+In practical measurements, the actual density decay deviates from the ideal $-2$ exponent and aligns closer to $-1.1$ after fitting Xu's data. Because the ray-casting engine already accounts for geometric spatial expansion, directly applying a strict $1/d^2$ random point deletion would double-count the distance effect. Consequently, the simulation incorporates a weakened, distance-dependent ``keep probability'' function to model supplementary non-geometric signal attenuation without over-sparsifying distant targets.
 
 
 \begin{center}
@@ -309,7 +309,7 @@ In practical measurements, the actual density decay deviates from the ideal $-2$
 
 \vspace{0.35em}
 
-As illustrated in Figure \ref{fig:simulated_measured_accumulated_clouds}, the simulated point cloud (left) effectively mirrors the actual real-world measurement (right). Driven by the simulated human trajectory and the integrated point-cloud model, the generated data accurately captures the dynamic walking sway, the view-dependent density variations (denser on surfaces facing the sensor), and the subtle sparsity at extended ranges. Overall, this customized generative model provides a highly reliable and interpretable foundation for conducting preliminary analyses on multi-target clustering, merging phenomena, and occlusion handling.
+As illustrated in Figure~\ref{fig:simulated_measured_accumulated_clouds}, the simulated point cloud (left) is consistent with the real-world measurement (right). Driven by the simulated human trajectory and the integrated point-cloud model, the generated data captures dynamic walking sway, view-dependent density variations (denser on surfaces facing the sensor), and sparsity at extended ranges. Overall, this customized generative model provides an interpretable foundation for preliminary analyses of multi-target clustering, merging, and occlusion handling.
 
 \end{contentbox}
 \newpage
@@ -374,7 +374,7 @@ For 3 targets, the joint occlusion configurations are reduced from $5^3=125$ in 
 
 \boxitemtitle{2.3 Merging: A Margin Problem}
 \begin{contentbox}
-To isolate the merging behavior, a simulation was established under strict ideal conditions: two targets, modeled as rounded cylinders with identical radii ($R$), moving at the same speed along a symmetric V-shaped trajectory without mutual occlusion. From a polar-coordinate perspective, occlusion and merging manifest as fundamentally different spatial phenomena. Occlusion is predominantly a \textit{radial} issue, occurring when targets share a similar angular azimuth ($\theta$) but differ in radial depth ($\rho$). Conversely, merging is a \textit{circumferential} problem when their absolute spatial distance across the horizontal plane becomes too narrow for clustering algorithms like DBSCAN to partition them.
+To isolate the merging behavior, a simulation was established under strict ideal conditions: 2 targets, modeled as rounded cylinders with identical radii ($R$), moving at the same speed along a symmetric V-shaped trajectory without mutual occlusion. From a polar-coordinate perspective, occlusion and merging manifest as different spatial phenomena. Occlusion is predominantly a \textit{radial} issue, occurring when targets share a similar angular azimuth ($\theta$) but differ in radial depth ($\rho$). Conversely, merging is a \textit{circumferential} problem when their absolute spatial distance across the horizontal plane becomes too narrow for clustering algorithms like DBSCAN to partition them.
 
 \vspace*{0.2em}
 The theoretical clustering failure point is defined by a margin encompassing the physical contact distance, the DBSCAN search radius ($\epsilon$), and a double-sided $3\sigma$ confidence boundary for measurement noise:
@@ -389,10 +389,10 @@ D_{\text{theory}} = 2R + \epsilon + \Delta_{\text{boundary}} \quad (\text{where 
 However, the ray-casting simulation reveals a gap between this theoretical prediction and the actual merge point. Due to the inherent angular sparsity of LiDAR beams along the mutually facing curved surfaces of the cylinders, an ``invisible air buffer'' forms. The algorithm requires the targets to physically "protect" further past $D_{\text{theory}}$ before their sparse boundary point densities overlap sufficiently to form a connected cluster.
 
 \vspace*{0.5em}
-Consequently, the merging threshold is more accurately interpreted as a dynamic margin interval $[2R, D_{\text{theory}}]$ rather than a static spatial distance (see Figure~\ref{fig:bubble_effect}). This observation yields a critical insight for tracking robustness: because merging relies on the sparse point distribution along the annular edges, this natural sparsity intrinsically delays the clustering failure, pushing the actual merge point remarkably close to the physical contact limit. 
+Consequently, the merging threshold is more accurately interpreted as a dynamic margin interval $[2R, D_{\text{theory}}]$ rather than a static spatial distance (see Figure~\ref{fig:bubble_effect}). This observation is relevant for tracking robustness: because merging relies on the sparse point distribution along the annular edges, this natural sparsity can delay clustering failure and move the actual merge point closer to the physical contact limit.
 
 \vspace*{0.5em}
-By actively exploiting this property and strengthen the sparsity, the system can artificially enlarge this ``air buffer''. Such a strategy may act as a geometric protective mechanism even under severe spatial proximity.
+By actively exploiting this property and strengthening sparsity, the system can enlarge this ``air buffer''. Such a strategy may act as a geometric protective mechanism under severe spatial proximity.
 \end{minipage}%
 \hfill
 \begin{minipage}[t]{0.55\textwidth}
@@ -409,7 +409,7 @@ By actively exploiting this property and strengthen the sparsity, the system can
 \begin{contentbox}
 \begin{minipage}[t]{0.57\textwidth}
 \vspace{0pt}
-In practical tracking, merging and occlusion may occur separately or briefly overlap when targets enter the same high-risk region. Figure~\ref{fig:x_crossing} tests 5 two-person cases: parallel walking, straight X-crossing from 2 LiDAR viewpoints, and X-turning from the same viewpoints. Only the X-turn-bottom case produces ID loss/swap; the KF still keeps an approximate position, but loses reliable turning-direction information after merging. Supplementary ground-truth, calibrated tracking, and 3D accumulated-cloud views are given in AQ4.
+In practical tracking, merging and occlusion may occur separately or briefly overlap when targets enter the same high-risk region. Figure~\ref{fig:x_crossing} tests 5 2-person cases: parallel walking, straight X-crossing from 2 LiDAR viewpoints, and X-turning from the same viewpoints. Only the X-turn-bottom case produces ID loss/swap; the KF still keeps an approximate position, but loses reliable turning-direction information after merging. Supplementary ground-truth, calibrated tracking, and 3D accumulated-cloud views are given in AQ4.
 \end{minipage}%
 \hfill
 \begin{minipage}[t]{0.39\textwidth}
@@ -433,7 +433,7 @@ Lower row & occlusion ratio, density-based quality, and merge flag \\
 \begin{center}
     \includegraphics[width=1\textwidth]{Figure9.png}
     \vspace{-0.5em}
-    \captionof{figure}{Accumulated point clouds, occlusion ratios, tracking quality, and merge states for the X-shaped two-person crossing model.}
+    \captionof{figure}{Accumulated point clouds, occlusion ratios, tracking quality, and merge states for the X-shaped 2-person crossing model.}
     \label{fig:x_crossing}
 \end{center}
 
@@ -447,10 +447,10 @@ To reduce these ambiguities, a \textbf{3-Voter Mechanism} is proposed for state 
         \textbf{Voter Layer} & \textbf{Mechanism and Necessity} \\
         \hline
         \textbf{1. Material and Physical Attributes} &
-        Uses LiDAR-intrinsic cues such as reflectivity~\cite{dong2023rliom} and height profiles to distinguish targets with different physical properties. This is especially useful for human-robot separation. \\
+        Uses LiDAR-intrinsic cues such as reflectivity~\cite{dong2023rliom} and height profiles to distinguish targets with different physical properties. This supports human-robot separation. \\
         \hline
         \textbf{2. Morphology \newline (Shape and Area)} &
-        Detects geometric anomalies such as sudden bounding-area expansion or figure-eight contours. Since natural human motion can also change shape, this voter should be validated by the other layers. \\
+        Detects geometric anomalies such as sudden bounding-area expansion or figure-8 contours. Since natural human motion can also change shape, this voter should be validated by the other layers. \\
         \hline
         \textbf{3. Kinematics \newline (Historical Trajectory)} &
         Uses historical velocity and predicted motion to identify high-risk merge zones before spatial clustering fully fails. This helps prepare the state machine in advance. \\
@@ -472,10 +472,10 @@ If the voters confirm that multiple targets are present within 1 cluster, the tr
 \textbf{Can a ceiling-mounted LiDAR reliably separate and track multiple persons, using Yiyun Xu's single-person tracking framework as the baseline?}
 
 \vspace{0.8em}
-\textbf{Answer:} Not reliably under all conditions. The single-person framework is a useful baseline for foreground segmentation and centroid extraction, but multi-person tracking introduces a new problem: ID persistence. For 1 person, a temporary detection gap mainly affects localization accuracy. For multiple persons, the same gap may cause ID switches, trajectory fragmentation, or false merging.
+\textbf{Answer:} Not reliably under all conditions. The single-person framework provides a baseline for foreground segmentation and centroid extraction, but multi-person tracking introduces a new problem: ID persistence. For 1 person, a temporary detection gap mainly affects localization accuracy. For multiple persons, the same gap may cause ID switches, trajectory fragmentation, or false merging.
 
 \vspace{0.6em}
-Reliability mainly depends on 2 constraints. First, the visible point clouds must remain separable enough for clustering. Once the inter-target distance enters the merging margin, DBSCAN may collapse multiple persons into 1 cluster. Second, occlusions must be short enough for the tracker to bridge them using prediction and re-identification. A constant-velocity Kalman filter is a reasonable baseline, but it is not robust enough for sharp turns, crossings, stops, and close interactions.
+Reliability mainly depends on 2 constraints: 1) the visible point clouds must remain separable enough for clustering, because DBSCAN may collapse multiple persons into 1 cluster once the inter-target distance enters the merging margin; and 2) occlusions must be short enough for the tracker to bridge them using prediction and re-identification. A constant-velocity Kalman filter is a reasonable baseline, but it is not robust enough for sharp turns, crossings, stops, and close interactions.
 
 \vspace{0.6em}
 \textit{Conclusion:} A ceiling-mounted LiDAR can support multi-person tracking in sparse indoor scenes, but it cannot be considered reliably scalable without additional data-association logic. The proposed 3-Voter Mechanism, together with stronger filtering models such as EKF, IMM, particle filtering, or GMM-based tracking, should be investigated to preserve IDs during merged or occluded intervals.
@@ -489,7 +489,7 @@ Reliability mainly depends on 2 constraints. First, the visible point clouds mus
 \textbf{Answer:} This case is more promising than human-human tracking because persons and robots usually have more distinguishable LiDAR signatures. Robots often contain metallic or plastic surfaces, regular planar structures, sharp edges, and stable geometric shapes. Human bodies are softer, more irregular, and more time-varying because of clothing, limbs, and gait motion.
 
 \vspace{0.6em}
-I would use 3 main LiDAR-intrinsic cues for this case:
+This case should use 3 main LiDAR-intrinsic cues:
 \begin{itemize}[leftmargin=*]
     \item \textbf{Reflectivity:} Different surface materials may generate different reflectivity patterns. R-LIOM shows that reflectivity can be used as an additional LiDAR information channel rather than only as a visualization layer~\cite{dong2023rliom}.
     \item \textbf{Geometry:} Robots are usually more regular in height, width, bounding-box shape, surface-normal distribution, and local roughness, while human point clouds are more deformable.
@@ -500,7 +500,7 @@ I would use 3 main LiDAR-intrinsic cues for this case:
 The complexity is still limited by target density. Depth ordering and cumulative shadow union can simplify the occlusion reasoning, but dense crowds or many robots in the same small space will still create severe shadows, cluster merging, and ID ambiguity.
 
 \vspace{0.6em}
-\textit{Conclusion:} Mixed human-robot tracking is likely easier than separating multiple similar human targets, provided that the robot has a stable shape and material signature. The next step should be real indoor testing with both persons and robots, so that target-specific feature fingerprints can be integrated into the Reflectivity Voter, Geometry Voter, and Kinematics Voter.
+\textit{Conclusion:} Mixed human-robot tracking has stronger separability than tracking multiple similar human targets, provided that the robot has a stable shape and material signature. The next step should be real indoor testing with both persons and robots, so that target-specific feature fingerprints can be integrated into the Reflectivity Voter, Geometry Voter, and Kinematics Voter.
 \end{contentbox}
 
 \newpage
@@ -532,7 +532,7 @@ The complexity is still limited by target density. Depth ordering and cumulative
     \item \textbf{For single-person tracking:} Xu's work shows that a ceiling-mounted LiDAR system can provide a reasonably accurate reference trajectory, especially when head-centroid tracking and LiDAR-IMU fusion are used.
     \item \textbf{For multi-target tracking:} The trajectory is not yet sufficient as an absolute ground-truth standard, because ID switches, merged clusters, and trajectory fragmentation become more important than single-centroid localization error.
     \item \textbf{Required evaluation variables:} Effective point-cloud radius, minimum merge distance, point-density decay, occlusion ratio, ID switches, track fragmentation, and recovery time should be added to the evaluation.
-    \item \textbf{Practical use:} The trajectory can currently serve as a useful offline benchmark or qualitative reference, but real multi-target experiments are still required before it can be treated as reliable ground truth.
+    \item \textbf{Practical use:} The trajectory can currently serve as an offline benchmark or qualitative reference, but real multi-target experiments are still required before it can be treated as reliable ground truth.
 \end{itemize}
 \end{contentbox}
 
@@ -542,25 +542,31 @@ The complexity is still limited by target density. Depth ordering and cumulative
 \chapter{Future Work \& Conclusion}
 % ==========================================
 \begin{sectionintro}{Next Steps}
-This paragraph translates the theoretical framework established during the internship into concrete implementation and validation steps.
+The next stage should validate the simulation results in measured indoor data and convert the proposed reasoning modules into testable tracking components.
 \end{sectionintro}
 
 \begin{contentbox}
-Based on the methods derived and simulated over the past 7 weeks, the next steps are:
 \begin{itemize}[leftmargin=*]
     \item \textbf{Empirical field validation:} Test the centimeter-scale sparsity-induced margin in the real laboratory setup and study how sensor noise, clothing, target orientation, and dynamic reflections change the merge threshold.
     \item \textbf{3-Voter implementation:} Implement the Morphology, Kinematics, and Reflectivity voters in the existing pipeline to flag merging events and trigger the Wait/Recover state machine.
     \item \textbf{Advanced filtering models:} Compare standard KF, EKF, IMM, particle filtering, and GMM-based tracking for nonlinear motion and multi-hypothesis recovery during deep occlusion.
     \item \textbf{Human-robot feature testing:} Collect mixed person-robot data and extract reflectivity, height, roughness, and surface-normal fingerprints for target classification.
+    \item \textbf{Reinforced sparsity and bubble protection:} Test whether LiDAR-intrinsic masks, multi-feature point weighting, or deliberately strengthened boundary sparsity can reduce the DBSCAN merge distance toward the physical-contact distance without removing valid target returns.
 \end{itemize}
 \end{contentbox}
 
 \begin{sectionintro}{Final Summary}
-This paragraph summarizes the 7-week research scope on multi-target tracking using a ceiling-mounted LiDAR.
+The main conclusions are summarized below.
 \end{sectionintro}
 
 \begin{contentbox}
-This internship project investigated the gap between single-target localization and multi-target tracking using a ceiling-mounted LiDAR. By deriving the fan-shaped occlusion shadow and introducing depth-ordered shadow union, I showed that complex mutual occlusion can be simplified into a near-to-far sequential reasoning problem. The simulation also showed that point-cloud sparsity can create a dynamic merging margin rather than 1 fixed merge distance. Finally, the proposed 3-Voter Mechanism combines geometry, trajectory history, and reflectivity to support ID preservation when spatial clustering becomes ambiguous. These findings provide a theoretical and computational foundation for future real-data experiments on robust indoor multi-target tracking.
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Research scope:} The project examined the transition from single-target localization to multi-target tracking using a ceiling-mounted LiDAR.
+    \item \textbf{Occlusion reasoning:} The fan-shaped shadow model and depth-ordered shadow union reduce mutual occlusion analysis to a near-to-far visibility reasoning problem.
+    \item \textbf{Merging behavior:} The simulations indicate that point-cloud sparsity creates a dynamic merging margin rather than 1 fixed merge distance.
+    \item \textbf{Tracking strategy:} The proposed 3-Voter Mechanism combines geometry, trajectory history, and reflectivity to support ID preservation when spatial clustering becomes ambiguous.
+    \item \textbf{Overall conclusion:} Ceiling-mounted LiDAR can support sparse indoor multi-target tracking, but reliable deployment requires stronger data association, real-data validation, and LiDAR-intrinsic feature use beyond 2D position alone.
+\end{itemize}
 \end{contentbox}
 
 \newpage
@@ -570,10 +576,9 @@ This internship project investigated the gap between single-target localization 
 \chapter{Additional Questions}
 % ==========================================
 \begin{sectionintro}{Auxiliary Analysis}
-This appendix records auxiliary questions that complement the main research scope and preserve useful ideas for future work.
+This appendix records auxiliary questions that complement the main research scope and preserve additional directions for future work.
 \end{sectionintro}
 
-\newpage
 \boxitemtitle{AQ1: Mathematical Derivations of Density Attenuation}
 \begin{contentbox}
 LiDAR density attenuation can be explained from the ray footprint and from spherical-coordinate scaling. Both views show that fixed angular sampling covers a larger Cartesian region as distance increases.
@@ -581,7 +586,7 @@ LiDAR density attenuation can be explained from the ray footprint and from spher
 \vspace{0.6em}
 \textbf{1. Area Method with Ground-Plane Projection:}
 
-A LiDAR emits beams at fixed angular increments: horizontal $\Delta\theta$ and vertical $\Delta\phi$. At distance $d$, the local spherical footprint first expands as
+A LiDAR emits beams at fixed angular increments: horizontal $\Delta\theta$ and vertical $\Delta\phi$. At distance $d$, the local spherical footprint expands as
 \[
 A_s(d) \approx (d\Delta\theta)(d\Delta\phi)=d^2\Delta\theta\Delta\phi .
 \]
@@ -617,7 +622,7 @@ Thus the Cartesian volume element is $dV=(d^2\cos\phi)\,dd\,d\theta\,d\phi$, whi
 \vspace{0.6em}
 \textbf{3. Why a Cylindrical Model Is Not Used:}
 
-A cylindrical model would describe mainly horizontal spreading. In cylindrical coordinates $(r,\theta,z)$, the Jacobian is $r$, so only 1 distance factor appears and the vertical direction has no range-dependent attenuation. This is less consistent with a LiDAR ray pattern, which spreads over both azimuth and elevation. Even when targets are observed on one floor and the vertical effect is smaller, point density still depends on object height and elevation angle. Therefore, the spherical/ray-casting model is a better abstraction for ceiling-mounted LiDAR point clouds.
+A cylindrical model would describe mainly horizontal spreading. In cylindrical coordinates $(r,\theta,z)$, the Jacobian is $r$, so only 1 distance factor appears and the vertical direction has no range-dependent attenuation. This is less consistent with a LiDAR ray pattern, which spreads over both azimuth and elevation. Even when targets are observed on 1 floor and the vertical effect is smaller, point density still depends on object height and elevation angle. Therefore, the spherical/ray-casting model is a better abstraction for ceiling-mounted LiDAR point clouds.
 
 \vspace{0.6em}
 \textbf{Insight:}
@@ -663,7 +668,7 @@ $3^{N-1}$
 \vspace{0.9em}
 \textbf{Why Cumulative Shadow Reduces the State Space:}
 
-Assume the targets are sorted as $r_1 < r_2 < \cdots < r_N$. The closest target $T_1$ is treated as visible and starts the first shadow. Then $T_2$ is checked against the shadow of $T_1$, $T_3$ is checked against the accumulated shadow of $T_1$ and $T_2$, and so on. Therefore, only $N-1$ near-to-far visibility checks are needed. Each check has 3 possible outcomes: none, partial, and full. Therefore, the physical state complexity becomes $3^{N-1}$.
+Assume the targets are sorted as $r_1 < r_2 < \cdots < r_N$. The closest target $T_1$ is treated as visible and starts the initial shadow. Then $T_2$ is checked against the shadow of $T_1$, $T_3$ is checked against the accumulated shadow of $T_1$ and $T_2$, and so on. Therefore, only $N-1$ near-to-far visibility checks are needed. Each check has 3 possible outcomes: none, partial, and full. Therefore, the physical state complexity becomes $3^{N-1}$.
 \end{contentbox}
 
 \newpage
@@ -674,7 +679,7 @@ The point cloud contains more information than 2D position alone. Since this pro
 \vspace{1.0em}
 \textbf{Core Idea:}
 
-When 2 targets are close or merged in the 2D plane, extra features such as height, point density, reflectivity, and motion can reduce ambiguity. This is especially useful for human-robot tracking because a person and a robot usually have different vertical sizes, surface regularity, material reflectivity, and motion patterns.
+When 2 targets are close or merged in the 2D plane, extra features such as height, point density, reflectivity, and motion can reduce ambiguity. This is relevant for human-robot tracking because a person and a robot usually have different vertical sizes, surface regularity, material reflectivity, and motion patterns.
 
 \vspace{0.8em}
 \textbf{Useful Feature Groups:}
@@ -690,13 +695,13 @@ When 2 targets are close or merged in the 2D plane, extra features such as heigh
 
 Reflectivity can be treated as an independent LiDAR-intrinsic feature rather than only a visualization value. Ouster sensors provide 8-bit reflectivity/intensity information, and R-LIOM shows that corrected reflectivity can be converted into grayscale pseudo-visual images~\cite{dong2023rliom}. This means that a LiDAR-only system can obtain camera-like cues, such as horizontal extent, surface pattern, and material contrast, without adding a camera.
 
-For mixed human-robot tracking, this channel can be used in 3 compact ways. First, reflectivity can be combined with height filtering to suppress unreliable ground reflections and emphasize target-level returns. Second, reflectivity descriptors can be combined with KNN-style neighborhood matching or state estimation to improve target consistency when geometry is ambiguous. Third, corrected reflectivity can be mapped into grayscale pseudo-images, allowing lightweight visual-style features to support classification and re-identification. Therefore, reflectivity is a useful candidate for the Reflectivity Voter, especially when close targets have similar shapes but different materials.
+For mixed human-robot tracking, this channel can be used in 3 compact ways: 1) reflectivity can be combined with height filtering to suppress unreliable ground reflections and emphasize target-level returns; 2) reflectivity descriptors can be combined with KNN-style neighborhood matching or state estimation to improve target consistency when geometry is ambiguous; and 3) corrected reflectivity can be mapped into grayscale pseudo-images, allowing lightweight visual-style features to support classification and re-identification. Therefore, reflectivity is a useful candidate for the Reflectivity Voter, especially when close targets have similar shapes but different materials.
 \end{contentbox}
 
 \newpage
 \boxitemtitle{AQ4: Supplementary Details for the X-Crossing Experiment}
 \begin{contentbox}
-This appendix item provides supplementary views for the X-crossing experiment in Section 2.4. Figure~\ref{fig:aq4-tracking-model-overview} focuses on the true motion and the calibrated KF tracking result. The first row shows the ground-truth motion models for the 5 test cases. In the parallel case, the 2 targets use identical object models and move with the same speed. All cases include short acceleration and deceleration phases at the beginning and end, while the middle part of each route is approximately uniform-speed motion. In the 2nd and 3rd columns, the targets move straight through the X-shaped crossing. To keep the motion physically valid, target A waits for about $1~\mathrm{s}$, so the 2 targets do not overlap; the closest distance is about $0.52~\mathrm{m}$, which is still larger than the radius sum $2R=0.50~\mathrm{m}$. In the 4th and 5th columns, the targets turn near the crossing focus. These turns include centripetal acceleration and a small circular arc, so the trajectories remain physically plausible.
+This appendix item provides supplementary views for the X-crossing experiment in Section 2.4. Figure~\ref{fig:aq4-tracking-model-overview} focuses on the true motion and the calibrated KF tracking result. Row 1 shows the ground-truth motion models for the 5 test cases. In the parallel case, the 2 targets use identical object models and move with the same speed. All cases include short acceleration and deceleration phases at the beginning and end, while the middle part of each route is approximately uniform-speed motion. In columns 2 and 3, the targets move straight through the X-shaped crossing. To keep the motion physically valid, target A waits for about $1~\mathrm{s}$, so the 2 targets do not overlap; the closest distance is about $0.52~\mathrm{m}$, which is still larger than the radius sum $2R=0.50~\mathrm{m}$. In columns 4 and 5, the targets turn near the crossing focus. These turns include centripetal acceleration and a small circular arc, so the trajectories remain physically plausible.
 
 \begin{center}
     \includegraphics[width=0.95\linewidth]{Figure8.png}
@@ -704,7 +709,7 @@ This appendix item provides supplementary views for the X-crossing experiment in
     \label{fig:aq4-tracking-model-overview}
 \end{center}
 
-The second row of Figure~\ref{fig:aq4-tracking-model-overview} adds the RMSE information and compares the true trajectories with the calibrated KF tracks. The dashed prediction lines usually lean toward the LiDAR-observed side of the point cloud, because the sensor-facing side has denser measurements and therefore contributes more strongly to the estimated trajectory.
+Row 2 of Figure~\ref{fig:aq4-tracking-model-overview} adds the RMSE information and compares the true trajectories with the calibrated KF tracks. The dashed prediction lines usually lean toward the LiDAR-observed side of the point cloud, because the sensor-facing side has denser measurements and therefore contributes more strongly to the estimated trajectory.
 
 \begin{center}
     \includegraphics[width=0.95\linewidth]{Figure10.png}
@@ -712,49 +717,49 @@ The second row of Figure~\ref{fig:aq4-tracking-model-overview} adds the RMSE inf
     \label{fig:aq4-kf-stress-summary}
 \end{center}
 
-Figure~\ref{fig:aq4-kf-stress-summary} gives an oblique 3D accumulated point-cloud view, making the 2 walking trajectories and the LiDAR-view dependence easier to observe. This experiment studies a small set of variables, but it already shows that the same motion model can produce different tracking outcomes from different LiDAR viewpoints. The result changes when merged points are visible from one side, or when occlusion removes too many points from another side.
+Figure~\ref{fig:aq4-kf-stress-summary} gives an oblique 3D accumulated point-cloud view, making the 2 walking trajectories and the LiDAR-view dependence easier to observe. This experiment studies a small set of variables, but it already shows that the same motion model can produce different tracking outcomes from different LiDAR viewpoints. The result changes when merged points are visible from 1 side, or when occlusion removes too many points from another side.
 
 The main conclusion is that turning inside a high-risk crossing region can make a simple linear filter fail, especially after merging removes direction information. More advanced filters, such as EKF, IMM, particle filtering, or GMM-based tracking, should therefore be considered in future work. Since point-cloud-only evidence is still limited, future models can also use stronger target fingerprints, especially height information along the $Z$ axis and reflectivity features. Finally, merging and occlusion are physically different failure modes. They do not have a direct causal relationship in most frames, and most target states are neither merged nor occluded. However, when targets become close in real multi-person motion, the 2 effects can overlap during a short high-risk interval. The stable physical features learned from the non-merged and non-occluded parts of the trajectory can be used to support trajectory prediction during these brief ambiguous intervals.
 \end{contentbox}
 
 \newpage
-\boxitemtitle{AQ6: Can an Elliptical Human Model Improve Multi-Target Boundary Analysis?}
+\boxitemtitle{AQ5: Can an Elliptical Human Model Improve Multi-Target Boundary Analysis?}
 \begin{contentbox}
-In the current simulation, each person is simplified as a circular or cylindrical object. This is useful as a baseline. However, a real human body is not perfectly circular in the horizontal plane. From a top-view LiDAR perspective, the human footprint is usually closer to an anisotropic shape with different length and width.
+In the current simulation, each person is simplified as a circular or cylindrical object. This provides a baseline. However, a real human body is not perfectly circular in the horizontal plane. From a top-view LiDAR perspective, the human footprint is usually closer to an anisotropic shape with different length and width.
 
 \vspace{1.0em}
 \textbf{Core Idea:}
 
-Instead of using 1 fixed radius in all directions, the human target can be represented by an elliptical effective boundary whose orientation is inferred from two coupled cues: the LiDAR-facing visibility direction and the target's motion direction. This is important for LiDAR-only tracking because ray-casting mainly samples the visible side of the body, so a person may appear as a crescent-like or partial elliptical point cloud rather than a complete circle or square. Therefore, the key idea is not only to fit an ellipse, but to extract orientation cues from this anisotropic, incomplete local structure and recover a more reliable target direction and boundary during merging and occlusion.
+Instead of using 1 fixed radius in all directions, the human target can be represented by an elliptical effective boundary whose orientation is inferred from 2 coupled cues: the LiDAR-facing visibility direction and the target's motion direction. This is important for LiDAR-only tracking because ray-casting mainly samples the visible side of the body, so a person may appear as a crescent-like or partial elliptical point cloud rather than a complete circle or square. Therefore, the model should not only fit an ellipse, but also extract orientation cues from this anisotropic, incomplete local structure and recover a more reliable target direction and boundary during merging and occlusion.
 
 \vspace{0.8em}
 \textbf{Main Challenges:}
 \begin{itemize}[leftmargin=*]
-    \item \textbf{Orientation Ambiguity:} The ellipse requires direction information, but the true body heading cannot always be clearly observed from 1 LiDAR frame.
+    \item \textbf{Orientation Ambiguity:} The ellipse requires direction information, but the true body heading cannot always be reliably observed from 1 LiDAR frame.
     \item \textbf{Point-Cloud Degradation:} During merging, occlusion, or sparse sampling at long distance, the cluster shape may be incomplete, making the fitted ellipse unstable.
 \end{itemize}
 \end{contentbox}
 
 \newpage
-\boxitemtitle{AQ7: Can the ``Bubble Effect'' be Leveraged as an Active Strategy to Prevent Cluster Merging?}
+\boxitemtitle{AQ6: Can the ``Bubble Effect'' be Leveraged as an Active Strategy to Prevent Cluster Merging?}
 \begin{contentbox}
-The view-dependent ``Bubble Effect'' can be used as a possible strategy for delaying DBSCAN cluster merging. The key idea is simple: when the point cloud becomes sparse near the contact area between two targets, the low-density gap can help the tracker keep two IDs separated for a longer time.
+The view-dependent ``Bubble Effect'' can be used as a possible strategy for delaying DBSCAN cluster merging. When the point cloud becomes sparse near the contact area between 2 targets, the low-density gap can help the tracker keep 2 IDs separated for a longer time.
 
 \vspace{0.8em}
 \textbf{1. Natural Bubble Buffer}
 \\
-The natural bubble buffer appears when two targets approach each other but the LiDAR returns near their facing boundaries remain sparse. As shown in Figure~\ref{fig:aq7-natural-bubble}, DBSCAN depends on local point density, controlled by the search radius $\epsilon$ and the minimum neighbor count $MinPts$. If the gap between the two point clouds is still sparse, the clusters may stay separated even when the physical targets are close. This delays the ID merge and creates a short protection zone before contact.
+The natural bubble buffer appears when 2 targets approach each other but the LiDAR returns near their facing boundaries remain sparse. As shown in Figure~\ref{fig:aq6-natural-bubble}, DBSCAN depends on local point density, controlled by the search radius $\epsilon$ and the minimum neighbor count $MinPts$. If the gap between the 2 point clouds is still sparse, the clusters may stay separated even when the physical targets are close. This delays the ID merge and creates a short protection zone before contact.
 
 \begin{center}
     \includegraphics[width=0.95\linewidth]{Figure6.png}
     \captionof{figure}{Natural bubble buffer caused by sparse points near the merging boundary.}
-    \label{fig:aq7-natural-bubble}
+    \label{fig:aq6-natural-bubble}
 \end{center}
 
 \vspace{0.8em}
-\textbf{2. Three Tested Buffer Models}
+\textbf{2. 3 Tested Buffer Models}
 \\
-The anisotropy test compares 1 baseline with 3 buffer-strengthening models. The baseline is the normal range-decay simulation and is used only for comparison. The 3 active models shown in Figure~\ref{fig:aq7-engineered-buffer} are \textbf{Power-law}, \textbf{Sigmoid}, and \textbf{Density}.
+The anisotropy test compares 1 baseline with 3 buffer-strengthening models. The baseline is the normal range-decay simulation and is used only for comparison. The 3 active models shown in Figure~\ref{fig:aq6-engineered-buffer} are \textbf{Power-law}, \textbf{Sigmoid}, and \textbf{Density}.
 
 Let $m_0$ be the minimum keep probability. Let $s \in [0,1]$ be the face score, where larger $s$ means that a point faces the LiDAR more directly.
 
@@ -793,18 +798,18 @@ Let $m_0$ be the minimum keep probability. Let $s \in [0,1]$ be the face score, 
                   & $m_0$ & minimum keep probability & $0.16$ \\ \hline
 \end{tabular}
 \caption{Parameters used by the Power-law, Sigmoid, and Density buffer models.}
-\label{tab:aq7_parameters}
+\label{tab:aq6_parameters}
 \end{table}
 
-Figure~\ref{fig:aq7-engineered-buffer} compares the baseline with the 3 active models. The result shows stable behavior under the tested settings and random structural noise ($\sigma = 0.015\text{ m}$). Because the plotted gap is the distance between the actual DBSCAN merge point and physical contact, a lower gap is better: it means the cluster merge is delayed until the targets are closer to real contact.
+Figure~\ref{fig:aq6-engineered-buffer} compares the baseline with the 3 active models. The result shows consistent behavior under the tested settings and random structural noise ($\sigma = 0.015\text{ m}$). Because the plotted gap is the distance between the actual DBSCAN merge point and physical contact, a lower gap is better: it means the cluster merge is delayed until the targets are closer to real contact.
 
 \begin{center}
     \includegraphics[width=0.95\linewidth]{Figure7.png}
     \captionof{figure}{Bubble-buffer comparison for Baseline, Power-law, Sigmoid, and Density models.}
-    \label{fig:aq7-engineered-buffer}
+    \label{fig:aq6-engineered-buffer}
 \end{center}
 
-Figures~\ref{fig:aq7-baseline-powerlaw-detail}--\ref{fig:aq7-merge-zoom-detail} provide enlarged views of the same AQ7 experiment. They are not new experiments, but clearer local views of the Figure~\ref{fig:aq7-engineered-buffer} result. Figure~\ref{fig:aq7-baseline-powerlaw-detail} compares the baseline and Power-law models at the theoretical merge point, actual DBSCAN merge point, and physical-contact point. The baseline merges at a spacing of about $0.69~\mathrm{m}$, while the Power-law model delays the actual merge to about $0.55~\mathrm{m}$, much closer to the $0.50~\mathrm{m}$ contact distance.
+Figures~\ref{fig:aq6-baseline-powerlaw-detail}--\ref{fig:aq6-merge-zoom-detail} provide enlarged views of the same AQ6 experiment rather than separate experiments. These figures show local details of the Figure~\ref{fig:aq6-engineered-buffer} result. Figure~\ref{fig:aq6-baseline-powerlaw-detail} compares the baseline and Power-law models at the theoretical merge point, actual DBSCAN merge point, and physical-contact point. The baseline merges at a spacing of about $0.69~\mathrm{m}$, while the Power-law model delays the actual merge to about $0.55~\mathrm{m}$, much closer to the $0.50~\mathrm{m}$ contact distance.
 
 \vspace{0.8em}
 \textbf{3. Practical Meaning}
@@ -814,23 +819,23 @@ These models suggest that a tracking pipeline can delay premature merging by adj
 \begin{center}
     \includegraphics[width=0.95\linewidth]{Figure11.png}
     \captionof{figure}{Enlarged comparison of Baseline and Power-law bubble-buffer behavior.}
-    \label{fig:aq7-baseline-powerlaw-detail}
+    \label{fig:aq6-baseline-powerlaw-detail}
 \end{center}
 
-Figure~\ref{fig:aq7-sigmoid-density-detail} gives the same enlarged comparison for the Sigmoid and Density models. The Sigmoid model merges at about $0.58~\mathrm{m}$, while the Density model merges at about $0.62~\mathrm{m}$. This makes the tradeoff more visible: all 3 active models reduce premature merging compared with the baseline, but they do not produce exactly the same point-cloud shape or merge spacing.
+Figure~\ref{fig:aq6-sigmoid-density-detail} gives the same enlarged comparison for the Sigmoid and Density models. The Sigmoid model merges at about $0.58~\mathrm{m}$, while the Density model merges at about $0.62~\mathrm{m}$. This makes the tradeoff more visible: all 3 active models reduce premature merging compared with the baseline, but they do not produce exactly the same point-cloud shape or merge spacing.
 
 \begin{center}
     \includegraphics[width=0.95\linewidth]{Figure12.png}
     \captionof{figure}{Enlarged comparison of Sigmoid and Density bubble-buffer behavior.}
-    \label{fig:aq7-sigmoid-density-detail}
+    \label{fig:aq6-sigmoid-density-detail}
 \end{center}
 
-Figure~\ref{fig:aq7-merge-zoom-detail} zooms into the actual DBSCAN merge frame for the 4 models. This view helps the reader see the boundary-point distribution more clearly. The active models keep fewer points near the facing boundary, so the connected cluster appears later and closer to physical contact.
+Figure~\ref{fig:aq6-merge-zoom-detail} zooms into the actual DBSCAN merge frame for the 4 models. This view shows the boundary-point distribution in more detail. The active models keep fewer points near the facing boundary, so the connected cluster appears later and closer to physical contact.
 
 \begin{center}
     \includegraphics[width=0.95\linewidth]{Figure13.png}
     \captionof{figure}{Zoomed actual-merge views for Baseline, Power-law, Sigmoid, and Density models.}
-    \label{fig:aq7-merge-zoom-detail}
+    \label{fig:aq6-merge-zoom-detail}
 \end{center}
 \end{contentbox}
 % ==========================================
@@ -856,8 +861,8 @@ This appendix summarizes the main papers and the models that can be reused in th
 
 \boxitemtitle{Efficient Detection and Tracking of Human Using 3D LiDAR Sensor~\cite{gomez2023efficient}}
 \begin{contentbox}
-    \textbf{ROI-Tracking Model:} Predicted regions of interest are extracted first. Voxelization, segmentation, geometric classification, and tracking are then applied only to high-probability target regions. \\
-    \textbf{Application:} This justifies reducing computational cost by processing only dynamic or predicted regions, which is useful for real-time multi-person tracking. \\
+    \textbf{ROI-Tracking Model:} Predicted regions of interest are extracted before voxelization, segmentation, geometric classification, and tracking are applied only to high-probability target regions. \\
+    \textbf{Application:} This justifies reducing computational cost by processing only dynamic or predicted regions, which supports real-time multi-person tracking. \\
     \textbf{Additional Use:} Its voting-style shape, normal, and shadow classifiers directly motivate the proposed Morphology and Visibility voters.
 \end{contentbox}
 
@@ -939,7 +944,7 @@ This appendix provides a chronological record of progress and supervisor discuss
 \begin{contentbox}
     \begin{itemize}[leftmargin=*, nosep]
         \item Reviewed 3 papers related to occlusion-aware tracking.
-        \item Extracted useful ideas for observation weighting, visibility reasoning, and multi-target association.
+        \item Extracted relevant ideas for observation weighting, visibility reasoning, and multi-target association.
     \end{itemize}
 \end{contentbox}
 
@@ -956,7 +961,7 @@ This appendix provides a chronological record of progress and supervisor discuss
 \begin{contentbox}
     \begin{itemize}[leftmargin=*, nosep]
         \item Built a 3-module framework: scenario-driven point-cloud generation, core multi-target tracking, and performance evaluation.
-        \item Improved simulation realism by including target geometry, target number, motion patterns, point noise, one-sided sparsity, gait-induced centroid oscillation, occlusion shadows, and cluster merging.
+        \item Improved simulation realism by including target geometry, target number, motion patterns, point noise, 1-sided sparsity, gait-induced centroid oscillation, occlusion shadows, and cluster merging.
         \item Analyzed the merging problem between 2 moving targets and identified a sparsity-induced separation margin that can delay premature DBSCAN merging.
         \item Extended the occlusion discussion from 2-target cases to more complex multi-target cases, including X-crossing motion and potential ID loss.
     \end{itemize}
