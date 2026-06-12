@@ -581,50 +581,42 @@ This appendix records auxiliary questions that complement the main research scop
 
 \boxitemtitle{AQ1: Mathematical Derivations of Density Attenuation}
 \begin{contentbox}
+\setlength{\abovedisplayskip}{3pt}
+\setlength{\belowdisplayskip}{3pt}
 LiDAR density attenuation can be explained from the ray footprint and from spherical-coordinate scaling. Both views show that fixed angular sampling covers a larger Cartesian region as distance increases.
 
-\vspace{0.6em}
+\vspace{0.25em}
 \textbf{1. Area Method with Ground-Plane Projection:}
 
-A LiDAR emits beams at fixed angular increments: horizontal $\Delta\theta$ and vertical $\Delta\phi$. At distance $d$, the local spherical footprint expands as
+A LiDAR emits beams at fixed angular increments $\Delta\theta$ and $\Delta\phi$. At distance $d$, the local spherical footprint and its ground-plane projection are
 \[
-A_s(d) \approx (d\Delta\theta)(d\Delta\phi)=d^2\Delta\theta\Delta\phi .
-\]
-Because the tracking analysis uses the ground-plane projection of the observed point cloud, this footprint should be projected by the elevation factor $\cos\phi$:
-\[
-A_p(d) \approx A_s(d)\cos\phi
-=d^2\cos\phi\,\Delta\theta\Delta\phi .
-\]
-For a fixed ray count $C$, the projected point density is therefore
-\[
-\rho_p(d,\phi) \approx \frac{C}{A_p(d)}
+\begin{aligned}
+A_s(d) &\approx (d\Delta\theta)(d\Delta\phi)=d^2\Delta\theta\Delta\phi,\\
+A_p(d) &\approx A_s(d)\cos\phi=d^2\cos\phi\,\Delta\theta\Delta\phi,\\
+\rho_p(d,\phi) &\approx \frac{C}{A_p(d)}
 \propto \frac{1}{d^2\cos\phi\,\Delta\theta\Delta\phi}.
+\end{aligned}
 \]
-The missing $\cos\phi$ term accounts for projecting the spherical ray footprint onto the top-view point-cloud plane; the dominant range term remains $d^2$.
+The $\cos\phi$ term accounts for projecting the spherical ray footprint onto the top-view point-cloud plane; the dominant range term remains $d^2$.
 
-\vspace{0.6em}
+\vspace{0.25em}
 \textbf{2. Rigorous Proof via Jacobian Matrix Transformation:}
 
-The same scaling follows from the coordinate transformation from spherical sensor coordinates $(d,\theta,\phi)$ to Cartesian coordinates $(x,y,z)$:
+The same scaling follows from transforming spherical sensor coordinates $(d,\theta,\phi)$ to Cartesian coordinates $(x,y,z)$:
 \[
-x = d\cos\phi\cos\theta, \quad y = d\cos\phi\sin\theta, \quad z = d\sin\phi
-\]
-The determinant of the Jacobian is
-\[
-|J_{3D}| = \begin{vmatrix} 
-\frac{\partial x}{\partial d} & \frac{\partial x}{\partial \theta} & \frac{\partial x}{\partial \phi} \\ 
-\frac{\partial y}{\partial d} & \frac{\partial y}{\partial \theta} & \frac{\partial y}{\partial \phi} \\ 
-\frac{\partial z}{\partial d} & \frac{\partial z}{\partial \theta} & \frac{\partial z}{\partial \phi} 
-\end{vmatrix} = d^2 \cos\phi
+\begin{gathered}
+x = d\cos\phi\cos\theta,\quad y = d\cos\phi\sin\theta,\quad z = d\sin\phi,\\
+|J_{3D}|=\left|\frac{\partial(x,y,z)}{\partial(d,\theta,\phi)}\right|=d^2\cos\phi.
+\end{gathered}
 \]
 Thus the Cartesian volume element is $dV=(d^2\cos\phi)\,dd\,d\theta\,d\phi$, which matches the projected area reasoning above.
 
-\vspace{0.6em}
+\vspace{0.25em}
 \textbf{3. Why a Cylindrical Model Is Not Used:}
 
 A cylindrical model would describe mainly horizontal spreading. In cylindrical coordinates $(r,\theta,z)$, the Jacobian is $r$, so only 1 distance factor appears and the vertical direction has no range-dependent attenuation. This is less consistent with a LiDAR ray pattern, which spreads over both azimuth and elevation. Even when targets are observed on 1 floor and the vertical effect is smaller, point density still depends on object height and elevation angle. Therefore, the spherical/ray-casting model is a better abstraction for ceiling-mounted LiDAR point clouds.
 
-\vspace{0.6em}
+\vspace{0.25em}
 \textbf{Insight:}
 
 Both derivations indicate that range-dependent sparsity is mainly governed by $d^2$, with $\cos\phi$ correcting the projection. In a small indoor room, this ideal inverse-square law may appear weaker than $d^{-2}$ because target height, sensor placement, occlusion, and surface visibility also affect the measured point density.
@@ -701,25 +693,29 @@ For mixed human-robot tracking, this channel can be used in 3 compact ways: 1) r
 \newpage
 \boxitemtitle{AQ4: Supplementary Details for the X-Crossing Experiment}
 \begin{contentbox}
-This appendix item provides supplementary views for the X-crossing experiment in Section 2.4. Figure~\ref{fig:aq4-tracking-model-overview} focuses on the true motion and the calibrated KF tracking result. Row 1 shows the ground-truth motion models for the 5 test cases. In the parallel case, the 2 targets use identical object models and move with the same speed. All cases include short acceleration and deceleration phases at the beginning and end, while the middle part of each route is approximately uniform-speed motion. In columns 2 and 3, the targets move straight through the X-shaped crossing. To keep the motion physically valid, target A waits for about $1~\mathrm{s}$, so the 2 targets do not overlap; the closest distance is about $0.52~\mathrm{m}$, which is still larger than the radius sum $2R=0.50~\mathrm{m}$. In columns 4 and 5, the targets turn near the crossing focus. These turns include centripetal acceleration and a small circular arc, so the trajectories remain physically plausible.
+This appendix item provides supplementary views for the X-crossing experiment in Section 2.4. Figure~\ref{fig:aq4-tracking-model-overview} shows the ground-truth motion models, calibrated KF tracks, and RMSE values for the 5 test cases. The parallel case uses 2 identical object models with the same speed. In columns 2 and 3, the targets move straight through the X-shaped crossing; target A waits for about $1~\mathrm{s}$, so the closest distance remains about $0.52~\mathrm{m}$, still larger than $2R=0.50~\mathrm{m}$. In columns 4 and 5, the targets turn near the crossing focus with centripetal acceleration and a short circular arc.
 
+\vspace{-0.35em}
 \begin{center}
-    \includegraphics[width=0.95\linewidth]{Figure8.png}
+    \includegraphics[width=0.88\linewidth]{Figure8.png}
     \captionof{figure}{Ground-truth trajectories, calibrated KF trajectories, and RMSE values for the X-crossing test cases.}
     \label{fig:aq4-tracking-model-overview}
 \end{center}
+\vspace{-0.55em}
 
-Row 2 of Figure~\ref{fig:aq4-tracking-model-overview} adds the RMSE information and compares the true trajectories with the calibrated KF tracks. The dashed prediction lines usually lean toward the LiDAR-observed side of the point cloud, because the sensor-facing side has denser measurements and therefore contributes more strongly to the estimated trajectory.
+The dashed prediction lines usually lean toward the LiDAR-observed side of the point cloud, because the sensor-facing side has denser measurements and contributes more strongly to the estimated trajectory.
 
+\vspace{-0.35em}
 \begin{center}
-    \includegraphics[width=0.95\linewidth]{Figure10.png}
+    \includegraphics[width=0.88\linewidth]{Figure10.png}
     \captionof{figure}{Oblique 3D accumulated point-cloud views for the X-crossing cases.}
     \label{fig:aq4-kf-stress-summary}
 \end{center}
+\vspace{-0.55em}
 
-Figure~\ref{fig:aq4-kf-stress-summary} gives an oblique 3D accumulated point-cloud view, making the 2 walking trajectories and the LiDAR-view dependence easier to observe. This experiment studies a small set of variables, but it already shows that the same motion model can produce different tracking outcomes from different LiDAR viewpoints. The result changes when merged points are visible from 1 side, or when occlusion removes too many points from another side.
+Figure~\ref{fig:aq4-kf-stress-summary} gives an oblique 3D accumulated point-cloud view, making the 2 walking trajectories and LiDAR-view dependence easier to observe. The same motion model can produce different tracking outcomes from different LiDAR viewpoints, depending on whether merged points remain visible or occlusion removes too many points.
 
-The main conclusion is that turning inside a high-risk crossing region can make a simple linear filter fail, especially after merging removes direction information. More advanced filters, such as EKF, IMM, particle filtering, or GMM-based tracking, should therefore be considered in future work. Since point-cloud-only evidence is still limited, future models can also use stronger target fingerprints, especially height information along the $Z$ axis and reflectivity features. Finally, merging and occlusion are physically different failure modes. They do not have a direct causal relationship in most frames, and most target states are neither merged nor occluded. However, when targets become close in real multi-person motion, the 2 effects can overlap during a short high-risk interval. The stable physical features learned from the non-merged and non-occluded parts of the trajectory can be used to support trajectory prediction during these brief ambiguous intervals.
+The main conclusion is that turning inside a high-risk crossing region can make a simple linear filter fail, especially after merging removes direction information. Future models should therefore consider EKF, IMM, particle filtering, or GMM-based tracking, together with stronger target fingerprints such as $Z$-axis height and reflectivity. Merging and occlusion are physically different failure modes, but they can overlap during short high-risk intervals; stable features from non-merged and non-occluded frames can support trajectory prediction during these ambiguous periods.
 \end{contentbox}
 
 \newpage
