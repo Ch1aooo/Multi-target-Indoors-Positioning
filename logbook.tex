@@ -573,30 +573,38 @@ This internship project investigated the gap between single-target localization 
 This appendix records auxiliary questions that complement the main research scope and preserve useful ideas for future work.
 \end{sectionintro}
 
+\newpage
 \boxitemtitle{AQ1: Mathematical Derivations of Density Attenuation}
 \begin{contentbox}
-The non-uniform distribution of LiDAR point clouds in Cartesian space can be demonstrated through two converging mathematical approaches: an intuitive geometric footprint analysis and a rigorous coordinate transformation proof.
+LiDAR density attenuation can be explained from the ray footprint and from spherical-coordinate scaling. Both views show that fixed angular sampling covers a larger Cartesian region as distance increases.
 
 \vspace{0.6em}
-\textbf{1. Intuitive Geometric Footprint (Area Method):}
+\textbf{1. Area Method with Ground-Plane Projection:}
 
-A LiDAR sensor fires laser beams at fixed angular increments: horizontal ($\Delta\theta$) and vertical ($\Delta\phi$). At a radial distance $d$, the physical arc lengths spanned by these increments are $d\Delta\theta$ and $d\Delta\phi$, respectively. Treating the minimal scanning unit as an approximate rectangle, the cross-sectional area $A(d)$ covered by a single laser pulse expands as:
+A LiDAR emits beams at fixed angular increments: horizontal $\Delta\theta$ and vertical $\Delta\phi$. At distance $d$, the local spherical footprint first expands as
 \[
-A(d) \approx (d\Delta\theta) \times (d\Delta\phi) = d^2 \Delta\theta \Delta\phi
+A_s(d) \approx (d\Delta\theta)(d\Delta\phi)=d^2\Delta\theta\Delta\phi .
 \]
-Since the total number of emitted rays is constant $C$, the spatial point density $\rho(d)$ is inversely proportional to this expanded area:
+Because the tracking analysis uses the ground-plane projection of the observed point cloud, this footprint should be projected by the elevation factor $\cos\phi$:
 \[
-\rho(d) \approx \frac{C}{A(d)} \propto \frac{1}{d^2 \Delta\theta \Delta\phi} \propto d^{-2}
+A_p(d) \approx A_s(d)\cos\phi
+=d^2\cos\phi\,\Delta\theta\Delta\phi .
 \]
+For a fixed ray count $C$, the projected point density is therefore
+\[
+\rho_p(d,\phi) \approx \frac{C}{A_p(d)}
+\propto \frac{1}{d^2\cos\phi\,\Delta\theta\Delta\phi}.
+\]
+The missing $\cos\phi$ term accounts for projecting the spherical ray footprint onto the top-view point-cloud plane; the dominant range term remains $d^2$.
 
 \vspace{0.6em}
 \textbf{2. Rigorous Proof via Jacobian Matrix Transformation:}
 
-This geometric scaling effect can be formally corroborated by calculating the volume change when mapping from the sensor's spherical coordinates $(d, \theta, \phi)$ to the Cartesian coordinate system $(x, y, z)$. The mapping equations are:
+The same scaling follows from the coordinate transformation from spherical sensor coordinates $(d,\theta,\phi)$ to Cartesian coordinates $(x,y,z)$:
 \[
 x = d\cos\phi\cos\theta, \quad y = d\cos\phi\sin\theta, \quad z = d\sin\phi
 \]
-The spatial scaling factor—representing how much a unit volume expands during this transformation—is precisely the determinant of the Jacobian matrix ($|J_{3D}|$):
+The determinant of the Jacobian is
 \[
 |J_{3D}| = \begin{vmatrix} 
 \frac{\partial x}{\partial d} & \frac{\partial x}{\partial \theta} & \frac{\partial x}{\partial \phi} \\ 
@@ -604,14 +612,20 @@ The spatial scaling factor—representing how much a unit volume expands during 
 \frac{\partial z}{\partial d} & \frac{\partial z}{\partial \theta} & \frac{\partial z}{\partial \phi} 
 \end{vmatrix} = d^2 \cos\phi
 \]
-Consequently, the minimal Cartesian volume element expands to $dV = |J_{3D}| \, dd \, d\theta \, d\phi = (d^2\cos\phi) \, dd \, d\theta \, d\phi$.
+Thus the Cartesian volume element is $dV=(d^2\cos\phi)\,dd\,d\theta\,d\phi$, which matches the projected area reasoning above.
 
 \vspace{0.6em}
-\textbf{Insight: Convergence of Both Methods}
+\textbf{3. Why a Cylindrical Model Is Not Used:}
 
-Both the straightforward geometric footprint approximation and the rigorous multivariate calculus derivation independently converge on the exact same mathematical truth: the Cartesian spatial scaling factor is dominated by $d^2$. This geometric distortion dictates that the point cloud surface density attenuates quadratically with range ($\rho \propto d^{-2}$). This proves that distant targets will inherently suffer from spatial sparsity, imposing a fundamental physical constraint on the sensor's resolution limit. This also relates to the room-size limit and it is not apparent compared to other factors deviating the density in a room of $10 m^2$.
+A cylindrical model would describe mainly horizontal spreading. In cylindrical coordinates $(r,\theta,z)$, the Jacobian is $r$, so only 1 distance factor appears and the vertical direction has no range-dependent attenuation. This is less consistent with a LiDAR ray pattern, which spreads over both azimuth and elevation. Even when targets are observed on one floor and the vertical effect is smaller, point density still depends on object height and elevation angle. Therefore, the spherical/ray-casting model is a better abstraction for ceiling-mounted LiDAR point clouds.
+
+\vspace{0.6em}
+\textbf{Insight:}
+
+Both derivations indicate that range-dependent sparsity is mainly governed by $d^2$, with $\cos\phi$ correcting the projection. In a small indoor room, this ideal inverse-square law may appear weaker than $d^{-2}$ because target height, sensor placement, occlusion, and surface visibility also affect the measured point density.
 \end{contentbox}
 
+\newpage
 \boxitemtitle{AQ2: Nonlinear Complexity of Multi-Target Occlusion}
 \begin{contentbox}
 Tracking complexity scales nonlinearly with the number of targets. While 2-target occlusion is relatively straightforward, 3 or more targets introduce mutual dependencies and overlapping shadows. If all pairwise occlusion relations are enumerated directly, the number of possible states grows very quickly.
@@ -652,9 +666,10 @@ $3^{N-1}$
 Assume the targets are sorted as $r_1 < r_2 < \cdots < r_N$. The closest target $T_1$ is treated as visible and starts the first shadow. Then $T_2$ is checked against the shadow of $T_1$, $T_3$ is checked against the accumulated shadow of $T_1$ and $T_2$, and so on. Therefore, only $N-1$ near-to-far visibility checks are needed. Each check has 3 possible outcomes: none, partial, and full. Therefore, the physical state complexity becomes $3^{N-1}$.
 \end{contentbox}
 
+\newpage
 \boxitemtitle{AQ3: Can Extra LiDAR Features Help Separate Humans and Robots?}
 \begin{contentbox}
-While studying LiDAR sensors and the real room setup, I found that the point cloud contains more information than only the 2D position. Since this project focuses on LiDAR-only tracking, useful features should be selected from the LiDAR data itself instead of relying on extra cameras or complicated calibration.
+The point cloud contains more information than 2D position alone. Since this project focuses on LiDAR-only tracking, useful features should be selected from the LiDAR data itself instead of relying on extra cameras or complex calibration.
 
 \vspace{1.0em}
 \textbf{Core Idea:}
@@ -671,6 +686,7 @@ When 2 targets are close or merged in the 2D plane, extra features such as heigh
 \end{itemize}
 \end{contentbox}
 
+\newpage
 \boxitemtitle{AQ4: Supplementary Details for the X-Crossing Experiment}
 \begin{contentbox}
 This appendix item provides supplementary views for the X-crossing experiment in Section 2.4. Figure~\ref{fig:aq4-tracking-model-overview} focuses on the true motion and the calibrated KF tracking result. The first row shows the ground-truth motion models for the 5 test cases. In the parallel case, the 2 targets use identical object models and move with the same speed. All cases include short acceleration and deceleration phases at the beginning and end, while the middle part of each route is approximately uniform-speed motion. In the 2nd and 3rd columns, the targets move straight through the X-shaped crossing. To keep the motion physically valid, target A waits for about $1~\mathrm{s}$, so the 2 targets do not overlap; the closest distance is about $0.52~\mathrm{m}$, which is still larger than the radius sum $2R=0.50~\mathrm{m}$. In the 4th and 5th columns, the targets turn near the crossing focus. These turns include centripetal acceleration and a small circular arc, so the trajectories remain physically plausible.
@@ -694,6 +710,7 @@ Figure~\ref{fig:aq4-kf-stress-summary} gives an oblique 3D accumulated point-clo
 The main conclusion is that turning inside a high-risk crossing region can make a simple linear filter fail, especially after merging removes direction information. More advanced filters, such as EKF, IMM, particle filtering, or GMM-based tracking, should therefore be considered in future work. Since point-cloud-only evidence is still limited, future models can also use stronger target fingerprints, especially height information along the $Z$ axis and reflectivity features. Finally, merging and occlusion are physically different failure modes. They do not have a direct causal relationship in most frames, and most target states are neither merged nor occluded. However, when targets become close in real multi-person motion, the 2 effects can overlap during a short high-risk interval. The stable physical features learned from the non-merged and non-occluded parts of the trajectory can be used to support trajectory prediction during these brief ambiguous intervals.
 \end{contentbox}
 
+\newpage
 \boxitemtitle{AQ6: Can an Elliptical Human Model Improve Multi-Target Boundary Analysis?}
 \begin{contentbox}
 In the current simulation, each person is simplified as a circular or cylindrical object. This is useful as a baseline. However, a real human body is not perfectly circular in the horizontal plane. From a top-view LiDAR perspective, the human footprint is usually closer to an anisotropic shape with different length and width.
@@ -711,6 +728,7 @@ Instead of using 1 fixed radius in all directions, the human target can be repre
 \end{itemize}
 \end{contentbox}
 
+\newpage
 \boxitemtitle{AQ7: Can the ``Bubble Effect'' be Leveraged as an Active Strategy to Prevent Cluster Merging?}
 \begin{contentbox}
 The view-dependent ``Bubble Effect'' can be used as a possible strategy for delaying DBSCAN cluster merging. The key idea is simple: when the point cloud becomes sparse near the contact area between two targets, the low-density gap can help the tracker keep two IDs separated for a longer time.
