@@ -684,6 +684,13 @@ When 2 targets are close or merged in the 2D plane, extra features such as heigh
     \item \textbf{Visibility Features:} Visible point ratio, point density, shadow area, and point loss.
     \item \textbf{Motion Features:} Velocity, acceleration, smoothness, turning behavior, and gait oscillation.
 \end{itemize}
+
+\vspace{0.8em}
+\textbf{Reflectivity as a Pseudo-Visual Cue:}
+
+Reflectivity can be treated as an independent LiDAR-intrinsic feature rather than only a visualization value. Ouster sensors provide 8-bit reflectivity/intensity information, and R-LIOM shows that corrected reflectivity can be converted into grayscale pseudo-visual images~\cite{dong2023rliom}. This means that a LiDAR-only system can obtain camera-like cues, such as horizontal extent, surface pattern, and material contrast, without adding a camera.
+
+For mixed human-robot tracking, this channel can be used in 3 compact ways. First, reflectivity can be combined with height filtering to suppress unreliable ground reflections and emphasize target-level returns. Second, reflectivity descriptors can be combined with KNN-style neighborhood matching or state estimation to improve target consistency when geometry is ambiguous. Third, corrected reflectivity can be mapped into grayscale pseudo-images, allowing lightweight visual-style features to support classification and re-identification. Therefore, reflectivity is a useful candidate for the Reflectivity Voter, especially when close targets have similar shapes but different materials.
 \end{contentbox}
 
 \newpage
@@ -718,7 +725,7 @@ In the current simulation, each person is simplified as a circular or cylindrica
 \vspace{1.0em}
 \textbf{Core Idea:}
 
-Instead of using 1 fixed radius in all directions, the human target can be represented by an elliptical effective boundary. The ellipse describes the directional size of the observed human point cloud, while the walking direction provides temporal information about target orientation.
+Instead of using 1 fixed radius in all directions, the human target can be represented by an elliptical effective boundary whose orientation is inferred from two coupled cues: the LiDAR-facing visibility direction and the target's motion direction. This is important for LiDAR-only tracking because ray-casting mainly samples the visible side of the body, so a person may appear as a crescent-like or partial elliptical point cloud rather than a complete circle or square. Therefore, the key idea is not only to fit an ellipse, but to extract orientation cues from this anisotropic, incomplete local structure and recover a more reliable target direction and boundary during merging and occlusion.
 
 \vspace{0.8em}
 \textbf{Main Challenges:}
@@ -799,6 +806,11 @@ Figure~\ref{fig:aq7-engineered-buffer} compares the baseline with the 3 active m
 
 Figures~\ref{fig:aq7-baseline-powerlaw-detail}--\ref{fig:aq7-merge-zoom-detail} provide enlarged views of the same AQ7 experiment. They are not new experiments, but clearer local views of the Figure~\ref{fig:aq7-engineered-buffer} result. Figure~\ref{fig:aq7-baseline-powerlaw-detail} compares the baseline and Power-law models at the theoretical merge point, actual DBSCAN merge point, and physical-contact point. The baseline merges at a spacing of about $0.69~\mathrm{m}$, while the Power-law model delays the actual merge to about $0.55~\mathrm{m}$, much closer to the $0.50~\mathrm{m}$ contact distance.
 
+\vspace{0.8em}
+\textbf{3. Practical Meaning}
+\\
+These models suggest that a tracking pipeline can delay premature merging by adjusting point keep probabilities before clustering. The method does not require extra hardware, but real room data are still needed because clutter, reflections, and different materials may change the bubble shape. The next step is to tune the parameters on measured data and check whether ID separation improves without losing valid target points.
+
 \begin{center}
     \includegraphics[width=0.95\linewidth]{Figure11.png}
     \captionof{figure}{Enlarged comparison of Baseline and Power-law bubble-buffer behavior.}
@@ -820,11 +832,6 @@ Figure~\ref{fig:aq7-merge-zoom-detail} zooms into the actual DBSCAN merge frame 
     \captionof{figure}{Zoomed actual-merge views for Baseline, Power-law, Sigmoid, and Density models.}
     \label{fig:aq7-merge-zoom-detail}
 \end{center}
-
-\vspace{0.8em}
-\textbf{3. Practical Meaning}
-\\
-These models suggest that a tracking pipeline can delay premature merging by adjusting point keep probabilities before clustering. The method does not require extra hardware, but real room data are still needed because clutter, reflections, and different materials may change the bubble shape. The next step is to tune the parameters on measured data and check whether ID separation improves without losing valid target points.
 \end{contentbox}
 % ==========================================
 \chapter{Literature Analysis}
