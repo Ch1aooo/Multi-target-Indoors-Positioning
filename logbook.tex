@@ -124,7 +124,8 @@
             \textbf{Email:} & \href{mailto:y.chen13@student.tue.nl}{y.chen13@student.tue.nl} \\
             \textbf{Supervisor:} & Prof. dr. ir. Guido Dolmans \\
             \textbf{Period:} & April 15 -- June 15 (9 weeks, incl. 2 weeks holiday) \\
-            \textbf{Credits:} & 10 ECTS (Applicable for HBO graduates)
+            \textbf{Credits:} & 10 ECTS (Applicable for HBO graduates)\\
+            \textbf{Course code:} & 5I010 Internship EE 10 ects
         \end{tabular}
     \end{flushleft}
 
@@ -220,7 +221,14 @@ Due to the limited availability of multi-target ceiling-mounted LiDAR datasets, 
 
 \vspace{0.35em}
 
-The framework contains 3 main modules. 1) The \textbf{point-cloud generation} module produces simplified human targets using a ceiling-mounted OSDome-like LiDAR model. It considers body geometry, a rounded head--shoulder cap, gait oscillation, range noise, distance-dependent sparsity, and visibility-dependent point distribution. 2) The \textbf{clustering and trajectory prediction} module estimates target positions frame by frame from the generated point clouds. This module is independent from the ground-truth trajectory, so the tracker does not directly know the true target center. 3) The \textbf{evaluation} module compares tracking performance based on criteria such as ID loss, merged-frame ratio, and trajectory quality.
+The framework contains 3 main modules. 
+\begin{itemize}
+    \item  \textbf{point-cloud generation} module produces simplified human targets using a ceiling-mounted OSDome-like LiDAR model. It considers body geometry, a rounded head--shoulder cap, gait oscillation, range noise, distance-dependent sparsity, and visibility-dependent point distribution. 
+
+\item  \textbf{clustering and trajectory prediction} module estimates target positions frame by frame from the generated point clouds. This module is independent from the ground-truth trajectory, so the tracker does not directly know the true target center. 
+
+\item  \textbf{The evaluation} module compares tracking performance based on criteria such as ID loss, merged-frame ratio, and trajectory quality.
+\end{itemize}
 
 \vspace{0.45em}
 
@@ -392,14 +400,14 @@ However, the ray-casting simulation reveals a gap between this theoretical predi
 Consequently, the merging threshold is more accurately interpreted as a dynamic margin interval $[2R, D_{\text{theory}}]$ rather than a static spatial distance (see Figure~\ref{fig:bubble_effect}). This observation is relevant for tracking robustness: because merging relies on the sparse point distribution along the annular edges, this natural sparsity can delay clustering failure and move the actual merge point closer to the physical contact limit.
 
 \vspace*{0.5em}
-By actively exploiting this property and strengthening sparsity, the system can enlarge this ``air buffer''. Such a strategy may act as a geometric protective mechanism under severe spatial proximity.
+By actively exploiting this property and strengthening sparsity, the system can enlarge this ``air buffer''. Such a strategy may act as a geometric protective mechanism under severe spatial proximity. More testing groups of strengthening results are listed in AQ
 \end{minipage}%
 \hfill
 \begin{minipage}[t]{0.55\textwidth}
 \vspace{0pt} % Ensures flawless top-alignment of the image graphic
 \centering
 \includegraphics[width=\textwidth]{Figure5.png}
-\captionof{figure}{Simulation of the margin gap along a V-shaped trajectory, illustrating the theoretical merge threshold versus the actual sparse-point merge event.}
+\captionof{figure}{Simulation of the margin gap along a V-shaped trajectory, illustrating the theoretical merge threshold versus the actual sparse-point merge event. (Triangles indicate the LiDAR position at the height of 2.7m)}
 \label{fig:bubble_effect}
 \end{minipage}
 \end{contentbox}
@@ -424,7 +432,7 @@ Red/blue & 2 target identities \\
 Yellow & merged or ambiguous points \\
 Star & LiDAR position \\
 Triangles & occluded centroids; size follows occlusion ratio \\
-Lower row & occlusion ratio, density-based quality, and merge flag \\
+Second row & occlusion ratio, density-based quality, and merge flag \\
 \hline
 \end{tabular}
 \end{minipage}
@@ -687,7 +695,16 @@ When 2 targets are close or merged in the 2D plane, extra features such as heigh
 
 Reflectivity can be treated as an independent LiDAR-intrinsic feature rather than only a visualization value. Ouster sensors provide 8-bit reflectivity/intensity information, and R-LIOM shows that corrected reflectivity can be converted into grayscale pseudo-visual images~\cite{dong2023rliom}. This means that a LiDAR-only system can obtain camera-like cues, such as horizontal extent, surface pattern, and material contrast, without adding a camera.
 
-For mixed human-robot tracking, this channel can be used in 3 compact ways: 1) reflectivity can be combined with height filtering to suppress unreliable ground reflections and emphasize target-level returns; 2) reflectivity descriptors can be combined with KNN-style neighborhood matching or state estimation to improve target consistency when geometry is ambiguous; and 3) corrected reflectivity can be mapped into grayscale pseudo-images, allowing lightweight visual-style features to support classification and re-identification. Therefore, reflectivity is a useful candidate for the Reflectivity Voter, especially when close targets have similar shapes but different materials.
+For mixed human-robot tracking, this channel can be used in 3 compact ways: 
+
+
+1) reflectivity can be combined with height filtering to suppress unreliable ground reflections and emphasize target-level returns; 
+
+
+2) reflectivity descriptors can be combined with KNN-style neighborhood matching or state estimation to improve target consistency when geometry is ambiguous; and 
+
+
+3) corrected reflectivity can be mapped into grayscale pseudo-images, allowing lightweight visual-style features to support classification and re-identification. Therefore, reflectivity is a useful candidate for the Reflectivity Voter, especially when close targets have similar shapes but different materials.
 \end{contentbox}
 
 \newpage
